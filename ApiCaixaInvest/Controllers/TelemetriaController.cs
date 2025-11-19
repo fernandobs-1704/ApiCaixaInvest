@@ -1,8 +1,6 @@
-﻿using ApiCaixaInvest.Data;
-using ApiCaixaInvest.Dtos.Responses;
-using ApiCaixaInvest.Dtos.Responses.Telemetria;
+﻿using ApiCaixaInvest.Dtos.Responses.Telemetria;
+using ApiCaixaInvest.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace ApiCaixaInvest.Controllers;
 
@@ -10,11 +8,11 @@ namespace ApiCaixaInvest.Controllers;
 [Route("api")]
 public class TelemetriaController : ControllerBase
 {
-    private readonly ApiCaixaInvestDbContext _db;
+    private readonly ITelemetriaQueryService _telemetriaQueryService;
 
-    public TelemetriaController(ApiCaixaInvestDbContext db)
+    public TelemetriaController(ITelemetriaQueryService telemetriaQueryService)
     {
-        _db = db;
+        _telemetriaQueryService = telemetriaQueryService;
     }
 
     /// <summary>
@@ -34,32 +32,7 @@ public class TelemetriaController : ControllerBase
             return BadRequest(new { message = "A data de fim deve ser maior ou igual à data de início." });
         }
 
-        var servicos = await _db.TelemetriaRegistros
-     .Where(t =>
-         DateOnly.FromDateTime(t.Data) >= inicio &&
-         DateOnly.FromDateTime(t.Data) <= fim)
-             .GroupBy(t => t.Servico)
-            .Select(g => new TelemetriaServicoResponse
-            {
-                Nome = g.Key,
-                QuantidadeChamadas = g.Count(),
-                MediaTempoRespostaMs = g.Any()
-                    ? (long)g.Average(x => x.TempoRespostaMs)
-                    : 0
-            })
-            .OrderBy(s => s.Nome)
-            .ToListAsync();
-
-        var response = new TelemetriaResponse
-        {
-            Servicos = servicos,
-            Periodo = new TelemetriaPeriodoResponse
-            {
-                Inicio = inicio,
-                Fim = fim
-            }
-        };
-
+        var response = await _telemetriaQueryService.ObterResumoAsync(inicio, fim);
         return Ok(response);
     }
 }

@@ -1,9 +1,7 @@
-﻿using ApiCaixaInvest.Data;
-using ApiCaixaInvest.Dtos.Requests.Simulacoes;
+﻿using ApiCaixaInvest.Dtos.Requests.Simulacoes;
 using ApiCaixaInvest.Dtos.Responses.Simulacoes;
-using ApiCaixaInvest.Services;
+using ApiCaixaInvest.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace ApiCaixaInvest.Controllers;
 
@@ -11,15 +9,15 @@ namespace ApiCaixaInvest.Controllers;
 [Route("api")]
 public class SimulacoesController : ControllerBase
 {
-    private readonly InvestmentSimulationService _simulationService;
-    private readonly ApiCaixaInvestDbContext _db;
+    private readonly IInvestmentSimulationService _simulationService;
+    private readonly ISimulacoesConsultaService _simulacoesConsultaService;
 
     public SimulacoesController(
-        InvestmentSimulationService simulationService,
-        ApiCaixaInvestDbContext db)
+        IInvestmentSimulationService simulationService,
+        ISimulacoesConsultaService simulacoesConsultaService)
     {
         _simulationService = simulationService;
-        _db = db;
+        _simulacoesConsultaService = simulacoesConsultaService;
     }
 
     /// <summary>
@@ -60,21 +58,7 @@ public class SimulacoesController : ControllerBase
     [HttpGet("simulacoes")]
     public async Task<ActionResult<IEnumerable<SimulacaoHistoricoResponse>>> GetSimulacoes()
     {
-        var simulacoes = await _db.Simulacoes
-            .Include(s => s.ProdutoInvestimento)
-            .OrderByDescending(s => s.DataSimulacao)
-            .Select(s => new SimulacaoHistoricoResponse
-            {
-                Id = s.Id,
-                ClienteId = s.ClienteId,
-                Produto = s.ProdutoInvestimento != null ? s.ProdutoInvestimento.Nome : string.Empty,
-                ValorInvestido = s.ValorInvestido,
-                ValorFinal = s.ValorFinal,
-                PrazoMeses = s.PrazoMeses,
-                DataSimulacao = s.DataSimulacao
-            })
-            .ToListAsync();
-
+        var simulacoes = await _simulacoesConsultaService.ObterHistoricoAsync();
         return Ok(simulacoes);
     }
 
@@ -87,24 +71,7 @@ public class SimulacoesController : ControllerBase
     [HttpGet("simulacoes/por-produto-dia")]
     public async Task<ActionResult<IEnumerable<SimulacoesPorProdutoDiaResponse>>> GetSimulacoesPorProdutoDia()
     {
-        var query = await _db.Simulacoes
-            .Include(s => s.ProdutoInvestimento)
-            .GroupBy(s => new
-            {
-                Produto = s.ProdutoInvestimento != null ? s.ProdutoInvestimento.Nome : string.Empty,
-                Data = s.DataSimulacao.Date
-            })
-            .Select(g => new SimulacoesPorProdutoDiaResponse
-            {
-                Produto = g.Key.Produto,
-                Data = g.Key.Data,
-                QuantidadeSimulacoes = g.Count(),
-                MediaValorFinal = g.Average(x => x.ValorFinal)
-            })
-            .OrderBy(r => r.Produto)
-            .ThenBy(r => r.Data)
-            .ToListAsync();
-
-        return Ok(query);
+        var resumo = await _simulacoesConsultaService.ObterResumoPorProdutoDiaAsync();
+        return Ok(resumo);
     }
 }

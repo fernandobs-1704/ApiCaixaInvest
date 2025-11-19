@@ -24,7 +24,7 @@ public class TelemetriaService
         {
             Servico = servico,
             TempoRespostaMs = tempoRespostaMs,
-            Data = DateTime.UtcNow
+            Data = DateTime.Now
         };
 
         _db.TelemetriaRegistros.Add(registro);

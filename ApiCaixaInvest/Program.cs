@@ -1,5 +1,6 @@
 using ApiCaixaInvest.Data;
-using ApiCaixaInvest.Helpers;
+using ApiCaixaInvest.Extensions;
+using ApiCaixaInvest.Interfaces;
 using ApiCaixaInvest.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -81,11 +82,14 @@ builder.Services.AddDbContext<ApiCaixaInvestDbContext>(options =>
     options.UseSqlite(cs);
 });
 
-// Registro da camada de serviço de simulação de investimentos.
-// AddScoped = uma instância por request HTTP.
-builder.Services.AddScoped<InvestmentSimulationService>();
-builder.Services.AddScoped<RiskProfileService>();
-builder.Services.AddScoped<TelemetriaService>();
+// Registro da camada de serviços (Interface -> Implementação)
+builder.Services.AddScoped<IInvestmentSimulationService, InvestmentSimulationService>();
+builder.Services.AddScoped<IRiskProfileService, RiskProfileService>();
+builder.Services.AddScoped<IInvestimentosService, InvestimentosService>();
+builder.Services.AddScoped<IProdutosService, ProdutosService>();
+builder.Services.AddScoped<ISimulacoesConsultaService, SimulacoesConsultaService>();
+builder.Services.AddScoped<ITelemetriaQueryService, TelemetriaQueryService>();
+builder.Services.AddScoped<TelemetriaService>(); 
 
 var app = builder.Build();
 
@@ -99,9 +103,6 @@ using (var scope = app.Services.CreateScope())
 
 // Configuração do pipeline de requisições HTTP.
 
-// Em ambiente de desenvolvimento, habilita o Swagger UI.
-// Se quiser Swagger também em produção para o desafio,
-// pode remover o IF e deixar sempre ativo.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

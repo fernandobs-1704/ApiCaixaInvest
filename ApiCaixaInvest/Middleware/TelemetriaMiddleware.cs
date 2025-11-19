@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using ApiCaixaInvest.Services;
 
-namespace ApiCaixaInvest.Helpers;
+namespace ApiCaixaInvest.Middleware;
 
 /// <summary>
 /// Middleware responsável por medir o tempo de resposta das chamadas à API
@@ -53,14 +53,5 @@ public class TelemetriaMiddleware
             // Em telemetria, falha de log não deve quebrar o request principal.
             // Em cenário real, aqui poderíamos logar em um logger separado.
         }
-    }
-}
-
-// Extension method para registro mais elegante no Program.cs
-public static class TelemetriaMiddlewareExtensions
-{
-    public static IApplicationBuilder UseApiTelemetria(this IApplicationBuilder app)
-    {
-        return app.UseMiddleware<TelemetriaMiddleware>();
     }
 }

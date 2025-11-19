@@ -1,5 +1,6 @@
 ﻿using ApiCaixaInvest.Data;
 using ApiCaixaInvest.Dtos.Responses.PerfilRisco;
+using ApiCaixaInvest.Interfaces;
 using ApiCaixaInvest.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,7 +9,7 @@ namespace ApiCaixaInvest.Services;
 /// <summary>
 /// Serviço responsável por calcular e persistir o perfil de risco do cliente.
 /// </summary>
-public class RiskProfileService
+public class RiskProfileService : IRiskProfileService
 {
     private readonly ApiCaixaInvestDbContext _db;
 

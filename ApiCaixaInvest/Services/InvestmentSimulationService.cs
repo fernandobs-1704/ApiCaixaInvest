@@ -1,12 +1,13 @@
 ﻿using ApiCaixaInvest.Data;
 using ApiCaixaInvest.Dtos.Requests.Simulacoes;
 using ApiCaixaInvest.Dtos.Responses.Simulacoes;
+using ApiCaixaInvest.Interfaces;
 using ApiCaixaInvest.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace ApiCaixaInvest.Services;
 
-public class InvestmentSimulationService
+public class InvestmentSimulationService : IInvestmentSimulationService
 {
     private readonly ApiCaixaInvestDbContext _db;
 
