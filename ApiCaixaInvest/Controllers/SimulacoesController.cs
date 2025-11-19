@@ -1,6 +1,6 @@
 ﻿using ApiCaixaInvest.Data;
-using ApiCaixaInvest.Dtos.Requests;
-using ApiCaixaInvest.Dtos.Responses;
+using ApiCaixaInvest.Dtos.Requests.Simulacoes;
+using ApiCaixaInvest.Dtos.Responses.Simulacoes;
 using ApiCaixaInvest.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

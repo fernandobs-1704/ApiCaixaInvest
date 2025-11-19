@@ -1,5 +1,5 @@
 ﻿using ApiCaixaInvest.Data;
-using ApiCaixaInvest.Dtos.Responses;
+using ApiCaixaInvest.Dtos.Responses.PerfilRisco;
 using ApiCaixaInvest.Models;
 using Microsoft.EntityFrameworkCore;
 

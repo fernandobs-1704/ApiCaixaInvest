@@ -1,4 +1,4 @@
-﻿using ApiCaixaInvest.Dtos.Responses;
+﻿using ApiCaixaInvest.Dtos.Responses.PerfilRisco;
 using ApiCaixaInvest.Services;
 using Microsoft.AspNetCore.Mvc;
 

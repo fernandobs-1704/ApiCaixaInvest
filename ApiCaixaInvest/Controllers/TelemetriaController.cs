@@ -1,12 +1,13 @@
 ﻿using ApiCaixaInvest.Data;
 using ApiCaixaInvest.Dtos.Responses;
+using ApiCaixaInvest.Dtos.Responses.Telemetria;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace ApiCaixaInvest.Controllers;
 
 [ApiController]
-[Route("api/telemetria")]
+[Route("api")]
 public class TelemetriaController : ControllerBase
 {
     private readonly ApiCaixaInvestDbContext _db;
@@ -17,50 +18,48 @@ public class TelemetriaController : ControllerBase
     }
 
     /// <summary>
-    /// Lista os registros individuais de telemetria.
+    /// Retorna o resumo de telemetria dos serviços da API em um período.
     /// </summary>
     /// <remarks>
-    /// Retorna cada chamada monitorada com serviço, tempo de resposta e data/hora.
+    /// Informe as datas de início e fim no formato yyyy-MM-dd via query string.
+    /// Exemplo: GET /api/telemetria?inicio=2025-10-01&amp;fim=2025-10-31
     /// </remarks>
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<TelemetriaRegistroResponse>>> GetTelemetria()
+    [HttpGet("telemetria")]
+    public async Task<ActionResult<TelemetriaResponse>> GetTelemetria(
+        [FromQuery] DateOnly inicio,
+        [FromQuery] DateOnly fim)
     {
-        var registros = await _db.TelemetriaRegistros
-            .OrderByDescending(t => t.Data)
-            .Select(t => new TelemetriaRegistroResponse
-            {
-                Id = t.Id,
-                Servico = t.Servico,
-                TempoRespostaMs = t.TempoRespostaMs,
-                Data = t.Data
-            })
-            .ToListAsync();
+        if (fim < inicio)
+        {
+            return BadRequest(new { message = "A data de fim deve ser maior ou igual à data de início." });
+        }
 
-        return Ok(registros);
-    }
-
-    /// <summary>
-    /// Retorna o resumo de telemetria agrupado por serviço e dia.
-    /// </summary>
-    /// <remarks>
-    /// Fornece quantidade de chamadas e tempo médio de resposta por endpoint.
-    /// </remarks>
-    [HttpGet("resumo")]
-    public async Task<ActionResult<IEnumerable<TelemetriaResumoResponse>>> GetTelemetriaResumo()
-    {
-        var resumo = await _db.TelemetriaRegistros
-            .GroupBy(t => new { t.Servico, Data = t.Data.Date })
-            .Select(g => new TelemetriaResumoResponse
+        var servicos = await _db.TelemetriaRegistros
+     .Where(t =>
+         DateOnly.FromDateTime(t.Data) >= inicio &&
+         DateOnly.FromDateTime(t.Data) <= fim)
+             .GroupBy(t => t.Servico)
+            .Select(g => new TelemetriaServicoResponse
             {
-                Servico = g.Key.Servico,
-                Data = g.Key.Data,
+                Nome = g.Key,
                 QuantidadeChamadas = g.Count(),
-                TempoMedioMs = (long)g.Average(x => x.TempoRespostaMs)
+                MediaTempoRespostaMs = g.Any()
+                    ? (long)g.Average(x => x.TempoRespostaMs)
+                    : 0
             })
-            .OrderBy(r => r.Servico)
-            .ThenBy(r => r.Data)
+            .OrderBy(s => s.Nome)
             .ToListAsync();
 
-        return Ok(resumo);
+        var response = new TelemetriaResponse
+        {
+            Servicos = servicos,
+            Periodo = new TelemetriaPeriodoResponse
+            {
+                Inicio = inicio,
+                Fim = fim
+            }
+        };
+
+        return Ok(response);
     }
 }

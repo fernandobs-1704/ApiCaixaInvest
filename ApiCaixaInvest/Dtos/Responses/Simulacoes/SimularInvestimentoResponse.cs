@@ -1,4 +1,4 @@
-﻿namespace ApiCaixaInvest.Dtos.Responses;
+﻿namespace ApiCaixaInvest.Dtos.Responses.Simulacoes;
 
 public class SimularInvestimentoResponse
 {

@@ -1,4 +1,4 @@
-﻿namespace ApiCaixaInvest.Dtos.Responses;
+﻿namespace ApiCaixaInvest.Dtos.Responses.PerfilRisco;
 
 /// <summary>
 /// Representa o perfil de risco calculado para um cliente.

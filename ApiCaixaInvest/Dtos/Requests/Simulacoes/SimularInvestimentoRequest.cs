@@ -1,4 +1,4 @@
-﻿namespace ApiCaixaInvest.Dtos.Requests;
+﻿namespace ApiCaixaInvest.Dtos.Requests.Simulacoes;
 
 public class SimularInvestimentoRequest
 {
