@@ -1,4 +1,5 @@
 using ApiCaixaInvest.Data;
+using ApiCaixaInvest.Helpers;
 using ApiCaixaInvest.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -83,6 +84,8 @@ builder.Services.AddDbContext<ApiCaixaInvestDbContext>(options =>
 // Registro da camada de serviço de simulação de investimentos.
 // AddScoped = uma instância por request HTTP.
 builder.Services.AddScoped<InvestmentSimulationService>();
+builder.Services.AddScoped<RiskProfileService>();
+builder.Services.AddScoped<TelemetriaService>();
 
 var app = builder.Build();
 
@@ -108,8 +111,8 @@ if (app.Environment.IsDevelopment())
 // Redireciona automaticamente HTTP -> HTTPS (boa prática para APIs públicas)
 app.UseHttpsRedirection();
 
-// Aqui entra autenticação e autorização quando adicionarmos JWT.
-// Por enquanto, só UseAuthorization (sem autenticação configurada ainda).
+app.UseApiTelemetria();
+
 app.UseAuthorization();
 
 // Mapeia automaticamente os controllers anotados com [ApiController]
