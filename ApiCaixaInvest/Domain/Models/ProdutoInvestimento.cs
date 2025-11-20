@@ -5,7 +5,6 @@ namespace ApiCaixaInvest.Domain.Models;
 /// <summary>
 /// Representa um produto de investimento disponível para simulação.
 /// </summary>
-[NotMapped]
 public class ProdutoInvestimento
 {
     /// <summary>

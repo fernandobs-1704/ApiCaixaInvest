@@ -2,7 +2,6 @@
 
 namespace ApiCaixaInvest.Domain.Models;
 
-[NotMapped]
 public class InvestimentoHistorico
 {
     public int Id { get; set; }

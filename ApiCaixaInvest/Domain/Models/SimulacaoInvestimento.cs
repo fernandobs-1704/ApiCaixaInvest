@@ -6,7 +6,6 @@ namespace ApiCaixaInvest.Domain.Models;
 /// Representa uma simulação de investimento realizada pelo cliente.
 /// Pode ser posteriormente efetivada como investimento real.
 /// </summary>
-[NotMapped]
 public class SimulacaoInvestimento
 {
     /// <summary>

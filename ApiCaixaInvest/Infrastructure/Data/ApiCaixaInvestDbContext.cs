@@ -4,7 +4,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ApiCaixaInvest.Infrastructure.Data;
 
-[NotMapped]
 public class ApiCaixaInvestDbContext : DbContext
 {
     public ApiCaixaInvestDbContext(DbContextOptions<ApiCaixaInvestDbContext> options)

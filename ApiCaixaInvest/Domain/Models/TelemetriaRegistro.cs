@@ -5,7 +5,6 @@ namespace ApiCaixaInvest.Domain.Models;
 /// <summary>
 /// Armazena uma métrica individual de telemetria capturada pela API.
 /// </summary>
-[NotMapped]
 public class TelemetriaRegistro
 {
     /// <summary>

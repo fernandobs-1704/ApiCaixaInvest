@@ -6,7 +6,6 @@ namespace ApiCaixaInvest.Domain.Models;
 /// Armazena o último perfil de risco calculado para o cliente.
 /// Atualizado sempre que uma nova simulação é efetivada.
 /// </summary>
-[NotMapped]
 public class PerfilCliente
 {
     /// <summary>

@@ -121,10 +121,23 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 });
 
 // Configuração do Entity Framework Core com SQLite.
-builder.Services.AddDbContext<ApiCaixaInvestDbContext>(options =>
+builder.Services.AddDbContext<ApiCaixaInvestDbContext>((services, options) =>
 {
-    var cs = builder.Configuration.GetConnectionString("DefaultConnection");
-    options.UseSqlite(cs);
+    // Verifica se estamos em ambiente de teste
+    var isTestEnvironment = builder.Environment.IsEnvironment("Testing") ||
+                           builder.Environment.EnvironmentName == "Test";
+
+    if (isTestEnvironment)
+    {
+        // Para testes, usa InMemory
+        options.UseInMemoryDatabase("InMemoryTestDb");
+    }
+    else
+    {
+        // Para desenvolvimento/produção, usa SQLite
+        var cs = builder.Configuration.GetConnectionString("DefaultConnection");
+        options.UseSqlite(cs);
+    }
 });
 
 builder.Services.Configure<JwtOptions>(
@@ -251,3 +264,9 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+
+namespace ApiCaixaInvest
+{
+    public partial class Program { }
+}

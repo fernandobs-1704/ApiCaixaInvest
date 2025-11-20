@@ -7,7 +7,6 @@ namespace ApiCaixaInvest.Domain.Models;
 /// Representa um cliente da plataforma de investimentos.
 /// Criado automaticamente ao executar uma simulação pela primeira vez.
 /// </summary>
-[NotMapped]
 public class Cliente
 {
     /// <summary>
