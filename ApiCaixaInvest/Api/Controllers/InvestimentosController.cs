@@ -15,10 +15,14 @@ namespace ApiCaixaInvest.Api.Controllers;
 public class InvestimentosController : ControllerBase
 {
     private readonly IInvestimentosService _investimentosService;
+    private readonly IRiskProfileService _perfilRiscoService;
 
-    public InvestimentosController(IInvestimentosService investimentosService)
+    public InvestimentosController(
+        IInvestimentosService investimentosService,
+        IRiskProfileService riskProfileService)
     {
         _investimentosService = investimentosService;
+        _perfilRiscoService = riskProfileService;
     }
 
     [HttpGet("investimentos/{clienteId:int}")]
@@ -43,12 +47,12 @@ public class InvestimentosController : ControllerBase
 
     [HttpPost("investimentos/efetivar")]
     [SwaggerOperation(
-        Summary = "Efetiva simulações de investimento.",
-        Description = "Transforma uma ou mais simulações já realizadas em investimentos reais, que passam a influenciar o perfil de risco do cliente."
-    )]
+      Summary = "Efetiva simulações de investimento.",
+      Description = "Transforma uma ou mais simulações já realizadas em investimentos reais, que passam a influenciar o perfil de risco do cliente."
+  )]
     [SwaggerRequestExample(typeof(EfetivarSimulacoesRequest), typeof(EfetivarSimulacoesRequestExample))]
-    [SwaggerResponse(StatusCodes.Status204NoContent, "Simulações efetivadas com sucesso (nenhum conteúdo retornado).")]
-    [SwaggerResponse(StatusCodes.Status400BadRequest, "Parâmetros inválidos (clienteId ou lista de simulações).")]
+    [SwaggerResponse(StatusCodes.Status200OK, "Simulações efetivadas com sucesso.")]
+    [SwaggerResponse(StatusCodes.Status400BadRequest, "Parâmetros inválidos.")]
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "Token JWT ausente ou inválido.")]
     public async Task<IActionResult> EfetivarSimulacoes([FromBody] EfetivarSimulacoesRequest request)
     {
@@ -58,8 +62,25 @@ public class InvestimentosController : ControllerBase
         if (request.SimulacaoIds == null || !request.SimulacaoIds.Any())
             return BadRequest(new { mensagem = "Informe ao menos uma simulação para efetivar." });
 
+        // Efetiva simulações
         await _investimentosService.EfetivarSimulacoesAsync(request.ClienteId, request.SimulacaoIds);
 
-        return NoContent();
+        // Recalcula perfil automaticamente
+        var perfil = await _perfilRiscoService.CalcularPerfilAsync(request.ClienteId);
+
+        // Retorno amigável 200 OK
+        return Ok(new
+        {
+            sucesso = true,
+            mensagem = "Simulações efetivadas com sucesso.",
+            clienteId = request.ClienteId,
+            simulacoesEfetivadas = request.SimulacaoIds,
+            novoPerfilRisco = new
+            {
+                perfil = perfil.Perfil,
+                pontuacao = perfil.Pontuacao
+            }
+        });
     }
+
 }

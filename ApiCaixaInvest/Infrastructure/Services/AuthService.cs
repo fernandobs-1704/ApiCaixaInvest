@@ -22,15 +22,10 @@ public class AuthService : IAuthService
     public Task<LoginResponse?> AutenticarAsync(LoginRequest request)
     {
         string perfil;
-        if (request.Email.Equals("cliente@caixa.gov.br", StringComparison.OrdinalIgnoreCase) &&
-            request.Senha == "123456")
+        if (request.Email.Equals("caixaverso@caixa.gov.br", StringComparison.OrdinalIgnoreCase) &&
+            request.Senha == "Caixaverso@2025")
         {
-            perfil = "Cliente";
-        }
-        else if (request.Email.Equals("gestor@caixa.gov.br", StringComparison.OrdinalIgnoreCase) &&
-                 request.Senha == "123456")
-        {
-            perfil = "Gestor";
+            perfil = "Usuario";
         }
         else
         {

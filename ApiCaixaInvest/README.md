@@ -1,0 +1,1 @@
+﻿# API Caixa Invest – Painel de Investimentos com Perfil de Risco Dinâmico

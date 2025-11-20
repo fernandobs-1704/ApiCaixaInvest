@@ -6,8 +6,8 @@ public class MeResponseExample : IExamplesProvider<object>
     {
         return new
         {
-            Usuario = "cliente@caixa.gov.br",
-            Perfil = "Cliente"
+            Usuario = "caixaverso@caixa.gov.br",
+            Perfil = "Usuario"
         };
     }
 }

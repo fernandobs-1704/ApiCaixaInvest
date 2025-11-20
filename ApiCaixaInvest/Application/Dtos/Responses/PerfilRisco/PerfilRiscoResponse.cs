@@ -1,4 +1,4 @@
-﻿using ApiCaixaInvest.Domain.Enum;
+﻿using ApiCaixaInvest.Domain.Enums;
 
 namespace ApiCaixaInvest.Application.Dtos.Responses.PerfilRisco;
 

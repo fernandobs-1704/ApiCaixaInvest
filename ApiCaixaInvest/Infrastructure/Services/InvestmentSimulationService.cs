@@ -45,10 +45,7 @@ public class InvestmentSimulationService : IInvestmentSimulationService
 
         // 5) Cálculo da simulação
         decimal anos = request.PrazoMeses / 12m;
-        decimal valorFinal = decimal.Round(
-            request.Valor * (1 + produtoEscolhido.RentabilidadeAnual * anos),
-            2
-        );
+        decimal valorFinal = decimal.Round(request.Valor * (1 + produtoEscolhido.RentabilidadeAnual * anos), 2);
 
         // 6) Persistir simulação
         var simulacao = new SimulacaoInvestimento
@@ -64,9 +61,10 @@ public class InvestmentSimulationService : IInvestmentSimulationService
         _db.Simulacoes.Add(simulacao);
         await _db.SaveChangesAsync();
 
-        // 7) Retorno estruturado
+        // 7) Retorno estruturado (agora com SimulacaoId)
         return new SimularInvestimentoResponse
         {
+            SimulacaoId = simulacao.Id,
             ProdutoValidado = new ProdutoResponse
             {
                 Id = produtoEscolhido.Id,

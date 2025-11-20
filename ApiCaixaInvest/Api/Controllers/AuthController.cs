@@ -11,7 +11,6 @@ namespace ApiCaixaInvest.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-[AllowAnonymous]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
@@ -25,8 +24,8 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     [SwaggerOperation(
         Summary = "Autentica o usuário e retorna um token JWT.",
-        Description = "Use os usuários de exemplo para testes: " +
-                      "**cliente@caixa.gov.br / 123456** ou **gestor@caixa.gov.br / 123456**."
+        Description = "Use as seguintes credenciais: " +
+                      "*** caixaverso@caixa.gov.br / Caixaverso@2025 ***"
     )]
     [SwaggerRequestExample(typeof(LoginRequest), typeof(LoginRequestExample))]
     [SwaggerResponse(StatusCodes.Status200OK, "Autenticação realizada com sucesso.", typeof(LoginResponse))]

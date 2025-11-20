@@ -6,6 +6,11 @@
 public class SimularInvestimentoResponse
 {
     /// <summary>
+    /// Identificador da simulação persistida no banco.
+    /// </summary>
+    public int SimulacaoId { get; set; }
+
+    /// <summary>
     /// Produto que foi selecionado/validado de acordo com os parâmetros informados.
     /// </summary>
     public ProdutoResponse ProdutoValidado { get; set; } = new();

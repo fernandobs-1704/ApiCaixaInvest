@@ -1,6 +1,6 @@
 ﻿using ApiCaixaInvest.Application.Dtos.Responses.PerfilRisco;
 using ApiCaixaInvest.Application.Interfaces;
-using ApiCaixaInvest.Domain.Enum;
+using ApiCaixaInvest.Domain.Enums;
 using ApiCaixaInvest.Domain.Models;
 using ApiCaixaInvest.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;

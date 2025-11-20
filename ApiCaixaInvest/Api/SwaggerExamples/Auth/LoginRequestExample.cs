@@ -9,8 +9,8 @@ public class LoginRequestExample : IExamplesProvider<LoginRequest>
     {
         return new LoginRequest
         {
-            Email = "cliente@caixa.gov.br",
-            Senha = "123456"
+            Email = "caixaverso@caixa.gov.br",
+            Senha = "Caixaverso@2025"
         };
     }
 }

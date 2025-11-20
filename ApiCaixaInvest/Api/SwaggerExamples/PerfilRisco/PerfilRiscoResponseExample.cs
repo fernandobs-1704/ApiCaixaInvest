@@ -1,5 +1,5 @@
 ﻿using ApiCaixaInvest.Application.Dtos.Responses.PerfilRisco;
-using ApiCaixaInvest.Domain.Enum;
+using ApiCaixaInvest.Domain.Enums;
 using Swashbuckle.AspNetCore.Filters;
 
 namespace ApiCaixaInvest.Api.SwaggerExamples.PerfilRisco;

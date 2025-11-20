@@ -1,9 +1,28 @@
-﻿namespace ApiCaixaInvest.Domain.Models;
-
-public class TelemetriaRegistro
+﻿namespace ApiCaixaInvest.Domain.Models
 {
-    public int Id { get; set; }
-    public string Servico { get; set; } = string.Empty;
-    public long TempoRespostaMs { get; set; }
-    public DateTime Data { get; set; }
+    /// <summary>
+    /// Armazena uma métrica individual de telemetria capturada pela API.
+    /// </summary>
+    public class TelemetriaRegistro
+    {
+        /// <summary>
+        /// Identificador único do registro de telemetria.
+        /// </summary>
+        public int Id { get; set; }
+
+        /// <summary>
+        /// Nome do serviço ou endpoint monitorado.
+        /// </summary>
+        public string Servico { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Tempo de resposta da requisição em milissegundos.
+        /// </summary>
+        public long TempoRespostaMs { get; set; }
+
+        /// <summary>
+        /// Momento em que o registro foi gerado.
+        /// </summary>
+        public DateTime Data { get; set; }
+    }
 }

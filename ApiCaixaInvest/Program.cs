@@ -4,6 +4,7 @@ using ApiCaixaInvest.Application.Options;
 using ApiCaixaInvest.Infrastructure.Data;
 using ApiCaixaInvest.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -95,6 +96,29 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 builder.Services.AddSwaggerExamplesFromAssemblyOf<Program>();
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var erros = context.ModelState
+            .Where(e => e.Value?.Errors.Count > 0)
+            .Select(e => new
+            {
+                Campo = e.Key,
+                Mensagens = e.Value!.Errors.Select(err => err.ErrorMessage)
+            });
+
+        var resposta = new
+        {
+            sucesso = false,
+            mensagem = "A requisição contém dados inválidos. Verifique os campos enviados.",
+            erros
+        };
+
+        return new BadRequestObjectResult(resposta);
+    };
+});
 
 // Configuração do Entity Framework Core com SQLite.
 builder.Services.AddDbContext<ApiCaixaInvestDbContext>(options =>
