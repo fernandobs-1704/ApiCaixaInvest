@@ -1,8 +1,11 @@
-﻿namespace ApiCaixaInvest.Application.Dtos.Responses.Telemetria;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ApiCaixaInvest.Application.Dtos.Responses.Telemetria;
 
 /// <summary>
 /// Resumo de chamadas de um serviço da API dentro de um período.
 /// </summary>
+[NotMapped]
 public class TelemetriaServicoResponse
 {
     /// <summary>

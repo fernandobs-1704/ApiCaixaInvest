@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36414.22 d17.14
+VisualStudioVersion = 17.14.36414.22
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiCaixaInvest", "ApiCaixaInvest\ApiCaixaInvest.csproj", "{1F842927-E6E8-4B2D-B95D-1B716B279C63}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiCaixaInvest.Tests", "ApiCaixaInvest.Tests\ApiCaixaInvest.Tests.csproj", "{C221EC99-69CE-4C20-AAC0-3BDA163BB363}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{1F842927-E6E8-4B2D-B95D-1B716B279C63}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1F842927-E6E8-4B2D-B95D-1B716B279C63}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1F842927-E6E8-4B2D-B95D-1B716B279C63}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C221EC99-69CE-4C20-AAC0-3BDA163BB363}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C221EC99-69CE-4C20-AAC0-3BDA163BB363}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C221EC99-69CE-4C20-AAC0-3BDA163BB363}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C221EC99-69CE-4C20-AAC0-3BDA163BB363}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

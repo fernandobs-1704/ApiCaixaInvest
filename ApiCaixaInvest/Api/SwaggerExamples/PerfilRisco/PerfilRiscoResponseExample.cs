@@ -1,9 +1,11 @@
 ﻿using ApiCaixaInvest.Application.Dtos.Responses.PerfilRisco;
 using ApiCaixaInvest.Domain.Enums;
 using Swashbuckle.AspNetCore.Filters;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ApiCaixaInvest.Api.SwaggerExamples.PerfilRisco;
 
+[NotMapped]
 public class PerfilRiscoResponseExample : IExamplesProvider<PerfilRiscoResponse>
 {
     public PerfilRiscoResponse GetExamples()

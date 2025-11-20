@@ -1,6 +1,8 @@
 ﻿using ApiCaixaInvest.Domain.Models;
 using Swashbuckle.AspNetCore.Filters;
+using System.ComponentModel.DataAnnotations.Schema;
 
+[NotMapped]
 public class ProdutosListaExample : IExamplesProvider<IEnumerable<ProdutoInvestimento>>
 {
     public IEnumerable<ProdutoInvestimento> GetExamples()

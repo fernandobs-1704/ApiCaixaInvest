@@ -1,8 +1,11 @@
-﻿namespace ApiCaixaInvest.Application.Dtos.Responses.Simulacoes;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ApiCaixaInvest.Application.Dtos.Responses.Simulacoes;
 
 /// <summary>
 /// Resposta completa da simulação de investimento, contendo produto validado e resultado financeiro.
 /// </summary>
+[NotMapped]
 public class SimularInvestimentoResponse
 {
     /// <summary>

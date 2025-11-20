@@ -1,8 +1,11 @@
-﻿namespace ApiCaixaInvest.Application.Dtos.Responses.Simulacoes;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ApiCaixaInvest.Application.Dtos.Responses.Simulacoes;
 
 /// <summary>
 /// Resumo estatístico das simulações por produto e dia, para uso em dashboards e análises.
 /// </summary>
+[NotMapped]
 public class SimulacoesPorProdutoDiaResponse
 {
     /// <summary>

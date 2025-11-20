@@ -1,8 +1,11 @@
-﻿namespace ApiCaixaInvest.Application.Dtos.Responses.Simulacoes;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ApiCaixaInvest.Application.Dtos.Responses.Simulacoes;
 
 /// <summary>
 /// Representa uma simulação de investimento já realizada e armazenada no histórico.
 /// </summary>
+[NotMapped]
 public class SimulacaoHistoricoResponse
 {
     /// <summary>

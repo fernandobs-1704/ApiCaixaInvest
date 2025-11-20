@@ -2,7 +2,6 @@
 using ApiCaixaInvest.Application.Dtos.Requests.Simulacoes;
 using ApiCaixaInvest.Application.Dtos.Responses.Simulacoes;
 using ApiCaixaInvest.Application.Interfaces;
-using ApiCaixaInvest.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
@@ -15,21 +14,11 @@ namespace ApiCaixaInvest.Api.Controllers;
 [Authorize]
 public class SimulacoesController : ControllerBase
 {
-    private readonly IInvestmentSimulationService _simulationService;
-    private readonly ISimulacoesConsultaService _simulacoesConsultaService;
-    private readonly IInvestimentosService _investimentosService;
-    private readonly IRiskProfileService _perfilRiscoService;
+    private readonly ISimulacoesService _simulacoesService;
 
-    public SimulacoesController(
-          IInvestmentSimulationService simulationService,
-          ISimulacoesConsultaService simulacoesConsultaService,
-          IInvestimentosService investimentosService,
-          IRiskProfileService perfilRiscoService)
+    public SimulacoesController(ISimulacoesService simulacoesService)
     {
-        _simulationService = simulationService;
-        _simulacoesConsultaService = simulacoesConsultaService;
-        _investimentosService = investimentosService;
-        _perfilRiscoService = perfilRiscoService;
+        _simulacoesService = simulacoesService;
     }
 
     [HttpPost("simular-investimento")]
@@ -54,7 +43,7 @@ public class SimulacoesController : ControllerBase
     {
         try
         {
-            var result = await _simulationService.SimularAsync(request);
+            var result = await _simulacoesService.SimularAsync(request);
             return Ok(result);
         }
         catch (ArgumentException ex)
@@ -78,48 +67,19 @@ public class SimulacoesController : ControllerBase
                       "como investimento real e atualiza o perfil de risco dinâmico do cliente."
     )]
     [SwaggerRequestExample(typeof(SimularInvestimentoRequest), typeof(SimularInvestimentoRequestExample))]
-    [SwaggerResponse(StatusCodes.Status200OK, "Simulação realizada e investimento efetivado com sucesso.")]
+    [SwaggerResponse(StatusCodes.Status200OK,
+        "Simulação realizada e investimento efetivado com sucesso.",
+        typeof(SimularEContratarInvestimentoResponse))]
     [SwaggerResponse(StatusCodes.Status400BadRequest, "Parâmetros inválidos ou inconsistentes.")]
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "Token JWT ausente ou inválido.")]
     [SwaggerResponse(StatusCodes.Status500InternalServerError, "Erro inesperado ao simular e contratar investimento.")]
-    public async Task<ActionResult<object>> SimularEContratarInvestimento(
+    public async Task<ActionResult<SimularEContratarInvestimentoResponse>> SimularEContratarInvestimento(
         [FromBody] SimularInvestimentoRequest request)
     {
         try
         {
-            // 1) Simula (e grava a simulação)
-            var simulacao = await _simulationService.SimularAsync(request);
-
-            // 2) Efetiva apenas essa simulação recém-criada
-            await _investimentosService.EfetivarSimulacoesAsync(
-                request.ClienteId,
-                new[] { simulacao.SimulacaoId });
-
-            // 3) Busca o investimento mais recente do cliente (provavelmente o que acabamos de criar)
-            var historico = await _investimentosService.ObterHistoricoAsync(request.ClienteId);
-            var investimento = historico
-                .OrderByDescending(h => h.Data)
-                .FirstOrDefault();
-
-            // 4) Recalcula perfil de risco após a contratação
-            var perfil = await _perfilRiscoService.CalcularPerfilAsync(request.ClienteId);
-
-            return Ok(new
-            {
-                sucesso = true,
-                mensagem = "Simulação realizada e investimento efetivado com sucesso.",
-                clienteId = request.ClienteId,
-                simulacao,
-                investimento,
-                perfilRisco = new
-                {
-                    perfil = perfil.Perfil,
-                    perfilTipo = perfil.PerfilTipo.ToString(),
-                    pontuacao = perfil.Pontuacao,
-                    descricao = perfil.Descricao,
-                    ultimaAtualizacao = perfil.UltimaAtualizacao
-                }
-            });
+            var result = await _simulacoesService.SimularEContratarAsync(request);
+            return Ok(result);
         }
         catch (ArgumentException ex)
         {
@@ -150,7 +110,7 @@ public class SimulacoesController : ControllerBase
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "Token JWT ausente ou inválido.")]
     public async Task<ActionResult<IEnumerable<SimulacaoHistoricoResponse>>> GetSimulacoes()
     {
-        var simulacoes = await _simulacoesConsultaService.ObterHistoricoAsync();
+        var simulacoes = await _simulacoesService.ObterHistoricoAsync();
         return Ok(simulacoes);
     }
 
@@ -170,7 +130,7 @@ public class SimulacoesController : ControllerBase
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "Token JWT ausente ou inválido.")]
     public async Task<ActionResult<IEnumerable<SimulacoesPorProdutoDiaResponse>>> GetSimulacoesPorProdutoDia()
     {
-        var resumo = await _simulacoesConsultaService.ObterResumoPorProdutoDiaAsync();
+        var resumo = await _simulacoesService.ObterResumoPorProdutoDiaAsync();
         return Ok(resumo);
     }
 }

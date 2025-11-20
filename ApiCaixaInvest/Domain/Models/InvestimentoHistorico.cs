@@ -1,5 +1,8 @@
-﻿namespace ApiCaixaInvest.Domain.Models;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
+namespace ApiCaixaInvest.Domain.Models;
+
+[NotMapped]
 public class InvestimentoHistorico
 {
     public int Id { get; set; }

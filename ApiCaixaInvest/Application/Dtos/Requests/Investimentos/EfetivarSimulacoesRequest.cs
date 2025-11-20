@@ -1,9 +1,12 @@
-﻿namespace ApiCaixaInvest.Application.Dtos.Requests.Investimentos;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ApiCaixaInvest.Application.Dtos.Requests.Investimentos;
 
 /// <summary>
 /// Envelope para efetivar uma ou mais simulações de investimento
 /// transformando-as em investimentos reais.
 /// </summary>
+[NotMapped]
 public class EfetivarSimulacoesRequest
 {
     /// <summary>

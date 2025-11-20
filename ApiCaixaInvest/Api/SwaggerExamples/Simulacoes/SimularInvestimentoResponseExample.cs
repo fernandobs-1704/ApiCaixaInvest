@@ -1,8 +1,10 @@
 ﻿using ApiCaixaInvest.Application.Dtos.Responses.Simulacoes;
 using Swashbuckle.AspNetCore.Filters;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ApiCaixaInvest.Api.SwaggerExamples.Simulacoes;
 
+[NotMapped]
 public class SimularInvestimentoResponseExample : IExamplesProvider<SimularInvestimentoResponse>
 {
     public SimularInvestimentoResponse GetExamples()

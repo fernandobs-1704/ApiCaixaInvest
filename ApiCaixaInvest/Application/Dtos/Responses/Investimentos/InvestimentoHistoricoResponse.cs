@@ -1,8 +1,11 @@
-﻿namespace ApiCaixaInvest.Application.Dtos.Responses.Investimentos;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ApiCaixaInvest.Application.Dtos.Responses.Investimentos;
 
 /// <summary>
 /// Item do histórico de investimentos efetivados pelo cliente.
 /// </summary>
+[NotMapped]
 public class InvestimentoHistoricoResponse
 {
     /// <summary>

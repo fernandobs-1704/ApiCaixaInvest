@@ -131,14 +131,13 @@ builder.Services.Configure<JwtOptions>(
     builder.Configuration.GetSection("Jwt"));
 
 // Registro da camada de serviços (Interface -> Implementação)
-builder.Services.AddScoped<IInvestmentSimulationService, InvestmentSimulationService>();
 builder.Services.AddScoped<IRiskProfileService, PerfilRiscoService>();
 builder.Services.AddScoped<IInvestimentosService, InvestimentosService>();
 builder.Services.AddScoped<IProdutosService, ProdutosService>();
-builder.Services.AddScoped<ISimulacoesConsultaService, SimulacoesConsultaService>();
 builder.Services.AddScoped<ITelemetriaService, TelemetriaService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IClienteService, ClienteService>();
+builder.Services.AddScoped<ISimulacoesService, SimulacoesService>();
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var secretKey = jwtSection.GetValue<string>("SecretKey");

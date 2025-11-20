@@ -1,8 +1,11 @@
-﻿namespace ApiCaixaInvest.Application.Dtos.Responses.Auth;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ApiCaixaInvest.Application.Dtos.Responses.Auth;
 
 /// <summary>
 /// Resposta de autenticação contendo o token JWT e informações do usuário.
 /// </summary>
+[NotMapped]
 public class LoginResponse
 {
     /// <summary>

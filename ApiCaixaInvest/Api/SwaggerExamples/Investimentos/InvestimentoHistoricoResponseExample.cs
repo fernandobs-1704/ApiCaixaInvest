@@ -1,6 +1,8 @@
 ﻿using ApiCaixaInvest.Application.Dtos.Responses.Investimentos;
 using Swashbuckle.AspNetCore.Filters;
+using System.ComponentModel.DataAnnotations.Schema;
 
+[NotMapped]
 public class InvestimentoHistoricoResponseExample : IExamplesProvider<IEnumerable<InvestimentoHistoricoResponse>>
 {
     public IEnumerable<InvestimentoHistoricoResponse> GetExamples()

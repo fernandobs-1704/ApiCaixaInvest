@@ -1,5 +1,6 @@
 ﻿using ApiCaixaInvest.Application.Interfaces;
 using ApiCaixaInvest.Infrastructure.Services;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
 
 namespace ApiCaixaInvest.Api.Middleware;
@@ -8,6 +9,7 @@ namespace ApiCaixaInvest.Api.Middleware;
 /// Middleware responsável por medir o tempo de resposta das chamadas à API
 /// e registrar os dados de telemetria no banco.
 /// </summary>
+[NotMapped]
 public class TelemetriaMiddleware
 {
     private readonly RequestDelegate _next;

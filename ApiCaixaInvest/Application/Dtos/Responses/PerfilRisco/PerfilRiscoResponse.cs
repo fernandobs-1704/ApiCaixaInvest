@@ -1,10 +1,12 @@
 ﻿using ApiCaixaInvest.Domain.Enums;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ApiCaixaInvest.Application.Dtos.Responses.PerfilRisco;
 
 /// <summary>
 /// Resultado do cálculo de perfil de risco do cliente.
 /// </summary>
+[NotMapped]
 public class PerfilRiscoResponse
 {
     /// <summary>

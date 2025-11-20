@@ -1,6 +1,8 @@
 ﻿using ApiCaixaInvest.Application.Dtos.Responses.Simulacoes;
 using Swashbuckle.AspNetCore.Filters;
+using System.ComponentModel.DataAnnotations.Schema;
 
+[NotMapped]
 public class SimulacoesPorProdutoDiaExample : IExamplesProvider<IEnumerable<SimulacoesPorProdutoDiaResponse>>
 {
     public IEnumerable<SimulacoesPorProdutoDiaResponse> GetExamples()

@@ -1,6 +1,8 @@
 ﻿using ApiCaixaInvest.Application.Dtos.Responses.Produtos;
 using Swashbuckle.AspNetCore.Filters;
+using System.ComponentModel.DataAnnotations.Schema;
 
+[NotMapped]
 public class ProdutosRecomendadosExample : IExamplesProvider<IEnumerable<ProdutoRecomendadoResponse>>
 {
     public IEnumerable<ProdutoRecomendadoResponse> GetExamples()

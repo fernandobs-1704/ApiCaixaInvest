@@ -1,8 +1,10 @@
 ﻿using ApiCaixaInvest.Application.Dtos.Requests.Investimentos;
 using Swashbuckle.AspNetCore.Filters;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ApiCaixaInvest.Api.SwaggerExamples.Investimentos;
 
+[NotMapped]
 public class EfetivarSimulacoesRequestExample : IExamplesProvider<EfetivarSimulacoesRequest>
 {
     public EfetivarSimulacoesRequest GetExamples()

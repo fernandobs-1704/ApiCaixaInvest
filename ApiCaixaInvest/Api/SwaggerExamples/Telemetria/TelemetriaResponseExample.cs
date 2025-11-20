@@ -1,8 +1,10 @@
 ﻿using ApiCaixaInvest.Application.Dtos.Responses.Telemetria;
 using Swashbuckle.AspNetCore.Filters;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ApiCaixaInvest.Api.SwaggerExamples.Telemetria;
 
+[NotMapped]
 public class TelemetriaResponseExample : IExamplesProvider<TelemetriaResponse>
 {
     public TelemetriaResponse GetExamples()

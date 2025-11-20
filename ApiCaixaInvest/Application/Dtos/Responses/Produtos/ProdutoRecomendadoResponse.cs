@@ -1,8 +1,11 @@
-﻿namespace ApiCaixaInvest.Application.Dtos.Responses.Produtos;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ApiCaixaInvest.Application.Dtos.Responses.Produtos;
 
 /// <summary>
 /// Representa um produto de investimento recomendado com base no perfil de risco do cliente.
 /// </summary>
+[NotMapped]
 public class ProdutoRecomendadoResponse
 {
     /// <summary>

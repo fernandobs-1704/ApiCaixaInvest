@@ -1,8 +1,10 @@
 ﻿using ApiCaixaInvest.Application.Dtos.Responses.Auth;
 using Swashbuckle.AspNetCore.Filters;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ApiCaixaInvest.Api.SwaggerExamples.Auth;
 
+[NotMapped]
 public class LoginResponseExample : IExamplesProvider<LoginResponse>
 {
     public LoginResponse GetExamples()

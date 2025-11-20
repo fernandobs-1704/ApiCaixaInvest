@@ -1,8 +1,11 @@
-﻿namespace ApiCaixaInvest.Application.Dtos.Requests.Simulacoes;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ApiCaixaInvest.Application.Dtos.Requests.Simulacoes;
 
 /// <summary>
 /// Dados de entrada para simulação de um investimento.
 /// </summary>
+[NotMapped]
 public class SimularInvestimentoRequest
 {
     /// <summary>
