@@ -13,9 +13,9 @@ namespace ApiCaixaInvest.Api.Controllers;
 [Authorize]
 public class TelemetriaController : ControllerBase
 {
-    private readonly ITelemetriaQueryService _telemetriaQueryService;
+    private readonly ITelemetriaService _telemetriaQueryService;
 
-    public TelemetriaController(ITelemetriaQueryService telemetriaQueryService)
+    public TelemetriaController(ITelemetriaService telemetriaQueryService)
     {
         _telemetriaQueryService = telemetriaQueryService;
     }

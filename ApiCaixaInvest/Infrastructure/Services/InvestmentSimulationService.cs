@@ -10,44 +10,47 @@ namespace ApiCaixaInvest.Infrastructure.Services;
 public class InvestmentSimulationService : IInvestmentSimulationService
 {
     private readonly ApiCaixaInvestDbContext _db;
+    private readonly IClienteService _clienteService;
 
-    public InvestmentSimulationService(ApiCaixaInvestDbContext db)
+    public InvestmentSimulationService(ApiCaixaInvestDbContext db, IClienteService clienteService)
     {
         _db = db;
+        _clienteService = clienteService;
     }
 
     public async Task<SimularInvestimentoResponse> SimularAsync(SimularInvestimentoRequest request)
     {
-        // 1) validações básicas
-        if (request.Valor <= 0)
-            throw new ArgumentException("O valor do investimento deve ser maior que zero.");
+        // 1) Validação inicial
+        ValidarRequestSimulacao(request);
 
-        if (request.PrazoMeses <= 0)
-            throw new ArgumentException("O prazo em meses deve ser maior que zero.");
+        // 2) Garante que o cliente exista (cria se não existir)
+        await _clienteService.GarantirClienteAsync(request.ClienteId);
 
-        if (string.IsNullOrWhiteSpace(request.TipoProduto))
-            throw new ArgumentException("O tipo de produto é obrigatório.");
+        // 3) Buscar produtos compatíveis no banco
+        var tipoNormalizado = request.TipoProduto.Trim().ToLowerInvariant();
 
-        // 2) buscar produtos compatíveis no banco
         var produtos = await _db.ProdutosInvestimento
-            .Where(p => p.Tipo.ToLower() == request.TipoProduto.ToLower()
-                        && p.PrazoMinimoMeses <= request.PrazoMeses)
+            .Where(p =>
+                p.Tipo.ToLower() == tipoNormalizado &&
+                p.PrazoMinimoMeses <= request.PrazoMeses)
             .ToListAsync();
 
         if (!produtos.Any())
             throw new InvalidOperationException("Nenhum produto compatível encontrado para os parâmetros informados.");
 
-        // 3) por enquanto, regra simples: escolhe o de maior rentabilidade
+        // 4) Regra simples: escolher produto com maior rentabilidade
         var produtoEscolhido = produtos
             .OrderByDescending(p => p.RentabilidadeAnual)
             .First();
 
-        // 4) cálculo da simulação
+        // 5) Cálculo da simulação
         decimal anos = request.PrazoMeses / 12m;
-        decimal valorFinal = request.Valor * (1 + produtoEscolhido.RentabilidadeAnual * anos);
-        valorFinal = decimal.Round(valorFinal, 2);
+        decimal valorFinal = decimal.Round(
+            request.Valor * (1 + produtoEscolhido.RentabilidadeAnual * anos),
+            2
+        );
 
-        // 5) salvar simulação no banco
+        // 6) Persistir simulação
         var simulacao = new SimulacaoInvestimento
         {
             ClienteId = request.ClienteId,
@@ -61,8 +64,8 @@ public class InvestmentSimulationService : IInvestmentSimulationService
         _db.Simulacoes.Add(simulacao);
         await _db.SaveChangesAsync();
 
-        // 6) montar DTO de resposta
-        var response = new SimularInvestimentoResponse
+        // 7) Retorno estruturado
+        return new SimularInvestimentoResponse
         {
             ProdutoValidado = new ProdutoResponse
             {
@@ -80,7 +83,23 @@ public class InvestmentSimulationService : IInvestmentSimulationService
             },
             DataSimulacao = simulacao.DataSimulacao
         };
+    }
 
-        return response;
+    private static void ValidarRequestSimulacao(SimularInvestimentoRequest request)
+    {
+        if (request is null)
+            throw new ArgumentException("A requisição não pode ser nula.");
+
+        if (request.ClienteId <= 0)
+            throw new ArgumentException("O identificador do cliente deve ser maior que zero.");
+
+        if (request.Valor <= 0)
+            throw new ArgumentException("O valor do investimento deve ser maior que zero.");
+
+        if (request.PrazoMeses <= 0)
+            throw new ArgumentException("O prazo em meses deve ser maior que zero.");
+
+        if (string.IsNullOrWhiteSpace(request.TipoProduto))
+            throw new ArgumentException("O tipo de produto é obrigatório.");
     }
 }

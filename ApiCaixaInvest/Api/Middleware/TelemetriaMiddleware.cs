@@ -1,5 +1,6 @@
-﻿using System.Diagnostics;
+﻿using ApiCaixaInvest.Application.Interfaces;
 using ApiCaixaInvest.Infrastructure.Services;
+using System.Diagnostics;
 
 namespace ApiCaixaInvest.Api.Middleware;
 
@@ -42,7 +43,7 @@ public class TelemetriaMiddleware
         try
         {
             // Resolve o serviço a partir do RequestServices (escopo por requisição)
-            var telemetriaService = context.RequestServices.GetService<TelemetriaService>();
+            var telemetriaService = context.RequestServices.GetService<ITelemetriaService>();
             if (telemetriaService != null)
             {
                 await telemetriaService.RegistrarAsync(servico, elapsedMs);

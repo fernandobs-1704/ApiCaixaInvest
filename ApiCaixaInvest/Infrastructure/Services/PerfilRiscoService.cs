@@ -11,11 +11,11 @@ namespace ApiCaixaInvest.Infrastructure.Services;
 /// Serviço responsável por calcular e persistir o perfil de risco do cliente,
 /// considerando volume, frequência, liquidez e rentabilidade, conforme enunciado.
 /// </summary>
-public class RiskProfileService : IRiskProfileService
+public class PerfilRiscoService : IRiskProfileService
 {
     private readonly ApiCaixaInvestDbContext _db;
 
-    public RiskProfileService(ApiCaixaInvestDbContext db)
+    public PerfilRiscoService(ApiCaixaInvestDbContext db)
     {
         _db = db;
     }

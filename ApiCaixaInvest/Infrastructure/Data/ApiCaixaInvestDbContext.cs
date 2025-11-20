@@ -15,10 +15,15 @@ public class ApiCaixaInvestDbContext : DbContext
     public DbSet<InvestimentoHistorico> InvestimentosHistorico => Set<InvestimentoHistorico>();
     public DbSet<PerfilCliente> PerfisClientes => Set<PerfilCliente>();
     public DbSet<TelemetriaRegistro> TelemetriaRegistros => Set<TelemetriaRegistro>();
+    public DbSet<Cliente> Clientes { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Cliente>()
+            .Property(c => c.Id)
+            .ValueGeneratedNever();
 
         // Relacionamento simples entre InvestimentoHistorico e ProdutoInvestimento
         modelBuilder.Entity<InvestimentoHistorico>()
