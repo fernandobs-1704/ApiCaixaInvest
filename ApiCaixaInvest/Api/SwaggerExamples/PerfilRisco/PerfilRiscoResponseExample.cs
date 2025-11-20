@@ -1,0 +1,21 @@
+﻿using ApiCaixaInvest.Application.Dtos.Responses.PerfilRisco;
+using ApiCaixaInvest.Domain.Enum;
+using Swashbuckle.AspNetCore.Filters;
+
+namespace ApiCaixaInvest.Api.SwaggerExamples.PerfilRisco;
+
+public class PerfilRiscoResponseExample : IExamplesProvider<PerfilRiscoResponse>
+{
+    public PerfilRiscoResponse GetExamples()
+    {
+        return new PerfilRiscoResponse
+        {
+            ClienteId = 123,
+            Perfil = "Moderado",
+            PerfilTipo = PerfilRiscoTipoEnum.Moderado,
+            Pontuacao = 65,
+            Descricao = "Perfil equilibrado entre segurança e rentabilidade.",
+            UltimaAtualizacao = DateTime.UtcNow
+        };
+    }
+}

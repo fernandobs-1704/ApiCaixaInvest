@@ -1,5 +1,8 @@
 ﻿namespace ApiCaixaInvest.Application.Dtos.Requests.Auth;
 
+/// <summary>
+/// Dados de entrada para autenticação via JWT.
+/// </summary>
 public class LoginRequest
 {
     /// <summary>

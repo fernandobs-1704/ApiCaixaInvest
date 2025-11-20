@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.Filters;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
@@ -16,21 +17,22 @@ var builder = WebApplication.CreateBuilder(args);
 // Controllers da API (padrão ASP.NET Core)
 builder.Services.AddControllers();
 
-// Gera metadados dos endpoints para o Swagger / OpenAPI
 builder.Services.AddEndpointsApiExplorer();
-
-// Configuração detalhada do Swagger / OpenAPI
 builder.Services.AddSwaggerGen(c =>
 {
-    // Documento principal da API (v1)
+    // Documento principal
     c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "API de Investimentos – Perfil de Risco Dinâmico",
         Version = "v1",
-        Description = "API desenvolvida para simulação de investimentos, cálculo de perfil de risco e recomendação de produtos financeiros."
+        Description = "API para simulação de investimentos, cálculo de perfil de risco dinâmico, recomendação de produtos e telemetria.",
+        Contact = new OpenApiContact
+        {
+            Name = "Desafio CaixaVerso",
+        }
     });
 
-    // Mapeamento extra para tipos DateOnly e TimeOnly (quando usados nos modelos/DTOs)
+    // Mapeia DateOnly / TimeOnly
     c.MapType<DateOnly>(() => new OpenApiSchema
     {
         Type = "string",
@@ -45,14 +47,15 @@ builder.Services.AddSwaggerGen(c =>
         Description = "Formato de hora: HH:mm:ss"
     });
 
-    // Inclui comentários XML dos controllers e models no Swagger,
-    // permitindo que os resumos (/// <summary>) apareçam na documentação.
+    // Comentários XML (summary/remarks)
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    c.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+    if (File.Exists(xmlPath))
+    {
+        c.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+    }
 
-    // Configuração de segurança do Swagger para uso de JWT (Bearer)
-    // Isso habilita o botão "Authorize" na UI do Swagger.
+    // Segurança JWT (botão Authorize)
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -60,10 +63,9 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Insira o token JWT:"
+        Description = "Informe o token JWT neste formato: **Bearer {seu_token}**"
     });
 
-    // Exige o esquema "Bearer" por padrão em todos os endpoints (pode ser refinado por atributo depois)
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -78,7 +80,21 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }
     });
+
+    // Agrupar endpoints por controller (cada controller vira uma TAG colorida)
+    c.TagActionsBy(api =>
+    {
+        // Usa o nome do controller como tag (Produtos, Simulacoes, Investimentos, etc.)
+        var controllerName = api.GroupName ?? api.ActionDescriptor.RouteValues["controller"];
+        return new[] { controllerName ?? "API" };
+    });
+
+    // Mostra o nome dos métodos HTTP nos botões (GET, POST, etc.)
+    c.EnableAnnotations();
+    c.ExampleFilters();
 });
+
+builder.Services.AddSwaggerExamplesFromAssemblyOf<Program>();
 
 // Configuração do Entity Framework Core com SQLite.
 builder.Services.AddDbContext<ApiCaixaInvestDbContext>(options =>
@@ -188,7 +204,18 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "API de Investimentos v1");
+        options.DocumentTitle = "Painel de Investimentos – Desafio CaixaVerso";
+        options.RoutePrefix = "swagger"; // acesso em /swagger
+
+        // UI mais amigável
+        options.DisplayRequestDuration(); // mostra tempo de resposta
+        options.DefaultModelsExpandDepth(0); // esconde o painel de modelos por padrão
+        options.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.List); // endpoints em lista
+        options.EnableFilter(); // caixa de busca no topo (filtrar por nome/tag)
+    });
 }
 
 app.UseHttpsRedirection();

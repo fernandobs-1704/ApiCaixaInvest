@@ -1,5 +1,6 @@
 ﻿using ApiCaixaInvest.Application.Dtos.Responses.PerfilRisco;
 using ApiCaixaInvest.Application.Interfaces;
+using ApiCaixaInvest.Domain.Enum;
 using ApiCaixaInvest.Domain.Models;
 using ApiCaixaInvest.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +8,8 @@ using Microsoft.EntityFrameworkCore;
 namespace ApiCaixaInvest.Infrastructure.Services;
 
 /// <summary>
-/// Serviço responsável por calcular e persistir o perfil de risco do cliente.
+/// Serviço responsável por calcular e persistir o perfil de risco do cliente,
+/// considerando volume, frequência, liquidez e rentabilidade, conforme enunciado.
 /// </summary>
 public class RiskProfileService : IRiskProfileService
 {
@@ -20,27 +22,47 @@ public class RiskProfileService : IRiskProfileService
 
     public async Task<PerfilRiscoResponse> CalcularPerfilAsync(int clienteId)
     {
-        // Carrega o histórico de investimentos do cliente
+        // 1) Carrega o histórico de investimentos do cliente
         var historico = await _db.InvestimentosHistorico
             .Where(h => h.ClienteId == clienteId)
             .ToListAsync();
 
+        // Sem histórico: assume conservador por padrão
         if (!historico.Any())
         {
-            // Sem histórico: assume conservador por padrão
-            return await SalvarERetornarAsync(clienteId, "Conservador", 20,
-                "Cliente sem histórico de investimentos; perfil definido como conservador por padrão.");
+            const int pontuacaoDefault = 20;
+            const string descricaoDefault =
+                "Cliente sem histórico de investimentos; perfil definido como conservador por padrão.";
+
+            return await SalvarERetornarAsync(
+                clienteId,
+                PerfilRiscoTipoEnum.Conservador,
+                pontuacaoDefault,
+                descricaoDefault);
         }
 
-        // Total investido (para ponderar risco pelo valor)
-        var totalInvestido = historico.Sum(h => h.Valor);
+        // 2) Volume total investido
+        decimal totalInvestido = historico.Sum(h => h.Valor);
         if (totalInvestido <= 0)
         {
-            return await SalvarERetornarAsync(clienteId, "Conservador", 20,
-                "Total investido igual ou inferior a zero; perfil definido como conservador.");
+            const int pontuacaoDefault = 20;
+            const string descricaoDefault =
+                "Total investido igual ou inferior a zero; perfil definido como conservador por padrão.";
+
+            return await SalvarERetornarAsync(
+                clienteId,
+                PerfilRiscoTipoEnum.Conservador,
+                pontuacaoDefault,
+                descricaoDefault);
         }
 
-        // Classificação simples de risco por tipo (poderia ser configurável)
+        // 3) Frequência de movimentações (últimos 12 meses)
+        var agora = DateTime.Now;
+        var corte12Meses = agora.AddMonths(-12);
+        int frequencia12Meses = historico
+            .Count(h => h.Data >= corte12Meses);
+
+        // 4) Composição de risco da carteira (alto risco vs renda fixa)
         decimal valorRendaFixa = historico
             .Where(h => EhRendaFixa(h.Tipo))
             .Sum(h => h.Valor);
@@ -49,26 +71,128 @@ public class RiskProfileService : IRiskProfileService
             .Where(h => EhAltoRisco(h.Tipo))
             .Sum(h => h.Valor);
 
-        // Pondera pelo percentual em produtos de maior risco
-        var percAlta = valorRiscoAlto / totalInvestido;
+        decimal percAlta = valorRiscoAlto / totalInvestido;
         percAlta = Math.Clamp(percAlta, 0m, 1m);
 
-        // Regra simples: quanto maior exposição ao risco alto, maior a pontuação
-        // base 30 + até 70 pontos proporcionais à exposição em risco alto
-        var pontuacao = (int)Math.Round(30m + percAlta * 70m, 0);
+        // 5) Preferência por liquidez vs rentabilidade via produtos de investimento
+        var produtos = await _db.ProdutosInvestimento.ToListAsync();
 
-        string perfil;
-        if (pontuacao < 40)
-            perfil = "Conservador";
-        else if (pontuacao <= 70)
-            perfil = "Moderado";
-        else
-            perfil = "Agressivo";
+        // Faz um "join" aproximado por Tipo (case-insensitive)
+        var joinHistProd = (from h in historico
+                            join p in produtos
+                                on h.Tipo.ToLower() equals p.Tipo.ToLower()
+                                into gj
+                            from p in gj.DefaultIfEmpty()
+                            select new { Historico = h, Produto = p })
+                            .ToList();
 
-        string explicacao = MontarExplicacao(perfil, pontuacao, percAlta, totalInvestido);
+        // Média de liquidez dos produtos efetivamente usados (fallback para 30 dias)
+        decimal mediaLiquidezDias = joinHistProd
+            .Where(x => x.Produto != null)
+            .Select(x => (decimal)x.Produto!.LiquidezDias)
+            .DefaultIfEmpty(30m)
+            .Average();
 
-        return await SalvarERetornarAsync(clienteId, perfil, pontuacao, explicacao);
+        // Média de rentabilidade anual dos produtos (fallback 0.10 = 10% a.a.)
+        decimal mediaRentabilidade = joinHistProd
+            .Where(x => x.Produto != null)
+            .Select(x => x.Produto!.RentabilidadeAnual)
+            .DefaultIfEmpty(0.10m)
+            .Average();
+
+        // 6) Cálculo dos "scores" individuais (cada eixo)
+        int scoreVolume = CalcularScoreVolume(totalInvestido);
+        int scoreFrequencia = CalcularScoreFrequencia(frequencia12Meses);
+        int scoreLiquidez = CalcularScoreLiquidez(mediaLiquidezDias);
+        int scoreRentabilidade = CalcularScoreRentabilidade(mediaRentabilidade);
+        int scoreRiscoCarteira = CalcularScoreRiscoCarteira(percAlta);
+
+        // 7) Pontuação final (soma dos eixos)
+        int pontuacaoFinal =
+            scoreVolume +
+            scoreFrequencia +
+            scoreLiquidez +
+            scoreRentabilidade +
+            scoreRiscoCarteira;
+
+        // 8) Classificação do perfil com base na pontuação global
+        PerfilRiscoTipoEnum perfilTipo = pontuacaoFinal switch
+        {
+            <= 80 => PerfilRiscoTipoEnum.Conservador,
+            <= 140 => PerfilRiscoTipoEnum.Moderado,
+            _ => PerfilRiscoTipoEnum.Agressivo
+        };
+
+        string descricao = MontarDescricao(
+            perfilTipo,
+            pontuacaoFinal,
+            totalInvestido,
+            frequencia12Meses,
+            mediaLiquidezDias,
+            mediaRentabilidade,
+            percAlta);
+
+        return await SalvarERetornarAsync(clienteId, perfilTipo, pontuacaoFinal, descricao);
     }
+
+    #region Cálculo de scores
+
+    private static int CalcularScoreVolume(decimal totalInvestido)
+    {
+        // Escala simples: quanto maior o volume, maior a capacidade/tolerância de risco
+        return totalInvestido switch
+        {
+            < 5_000m => 10,
+            < 20_000m => 20,
+            < 100_000m => 30,
+            _ => 40
+        };
+    }
+
+    private static int CalcularScoreFrequencia(int freq12Meses)
+    {
+        // Quanto mais movimenta, mais propenso a buscar oportunidades (mais agressivo)
+        return freq12Meses switch
+        {
+            0 => 10, // quase não mexe
+            1 => 20,
+            <= 6 => 30,
+            _ => 40  // movimentação alta
+        };
+    }
+
+    private static int CalcularScoreLiquidez(decimal mediaLiquidezDias)
+    {
+        // Poucos dias de liquidez => forte preferência por liquidez (tende a conservador)
+        return mediaLiquidezDias switch
+        {
+            <= 30m => 40, // alta liquidez
+            <= 90m => 25,
+            _ => 10  // aceita baixa liquidez => mais tolerante a risco
+        };
+    }
+
+    private static int CalcularScoreRentabilidade(decimal mediaRentabilidade)
+    {
+        // Maior rentabilidade média sugere busca por retorno maior (mais agressivo)
+        return mediaRentabilidade switch
+        {
+            < 0.08m => 10,
+            < 0.12m => 20,
+            < 0.20m => 30,
+            _ => 40
+        };
+    }
+
+    private static int CalcularScoreRiscoCarteira(decimal percAlta)
+    {
+        // Proporção de ativos de alto risco na carteira, mapeada para 0 a 40 pontos
+        return (int)Math.Round(percAlta * 40m, 0);
+    }
+
+    #endregion
+
+    #region Helpers de classificação de produtos por tipo (alto risco x renda fixa)
 
     private static bool EhRendaFixa(string tipo)
     {
@@ -95,35 +219,62 @@ public class RiskProfileService : IRiskProfileService
             || tipo.Contains("acao")
             || tipo.Contains("multimercado")
             || tipo.Contains("cripto")
-            || tipo.Contains("derivativo");
+            || tipo.Contains("derivativo")
+            || tipo.Contains("fundo"); // fundos em geral tendem a ter mais risco
     }
 
-    private string MontarExplicacao(string perfil, int pontuacao, decimal percAlta, decimal totalInvestido)
+    #endregion
+
+    #region Montagem da descrição (descricao) para o response
+
+    private string MontarDescricao(
+        PerfilRiscoTipoEnum perfil,
+        int pontuacao,
+        decimal totalInvestido,
+        int frequencia12Meses,
+        decimal mediaLiquidezDias,
+        decimal mediaRentabilidade,
+        decimal percAltaRisco)
     {
-        var percAltaFmt = Math.Round(percAlta * 100m, 2);
+        var percAltaFmt = Math.Round(percAltaRisco * 100m, 2);
+        var liquidezFmt = Math.Round(mediaLiquidezDias, 1);
+        var rentabFmt = Math.Round(mediaRentabilidade * 100m, 2);
 
-        return perfil switch
+        var baseDescricao = perfil switch
         {
-            "Conservador" =>
-                $"Perfil {perfil} (pontuação {pontuacao}). Baixa exposição a ativos de maior risco e preferência por produtos de renda fixa. Exposição em risco alto: {percAltaFmt}% do total investido.",
-            "Moderado" =>
-                $"Perfil {perfil} (pontuação {pontuacao}). Combinação equilibrada entre renda fixa e ativos de maior risco. Exposição em risco alto: {percAltaFmt}% do total investido.",
-            "Agressivo" =>
-                $"Perfil {perfil} (pontuação {pontuacao}). Alta exposição a ativos de maior risco e maior tolerância a volatilidade. Exposição em risco alto: {percAltaFmt}% do total investido.",
+            PerfilRiscoTipoEnum.Conservador =>
+                "Perfil conservador: foco em segurança, preferência por liquidez e baixa exposição a ativos de maior risco.",
+            PerfilRiscoTipoEnum.Moderado =>
+                "Perfil moderado: equilíbrio entre segurança e rentabilidade, com alguma exposição a ativos de maior risco.",
+            PerfilRiscoTipoEnum.Agressivo =>
+                "Perfil agressivo: maior tolerância a risco, buscando retornos mais elevados e aceitando maior volatilidade.",
             _ =>
-                $"Perfil {perfil} (pontuação {pontuacao}). Total investido analisado: {totalInvestido:C2}."
+                "Perfil de risco calculado a partir do comportamento de investimentos do cliente."
         };
+
+        var detalhes =
+            $" Pontuação {pontuacao}. Total investido analisado: {totalInvestido:C2}. " +
+            $"Movimentações nos últimos 12 meses: {frequencia12Meses}. " +
+            $"Liquidez média dos produtos: ~{liquidezFmt} dias. " +
+            $"Rentabilidade média anual: {rentabFmt}%. " +
+            $"Exposição a ativos de maior risco: {percAltaFmt}% do total investido.";
+
+        return baseDescricao + detalhes;
     }
+
+    #endregion
+
+    #region Persistência e montagem do DTO de resposta
 
     private async Task<PerfilRiscoResponse> SalvarERetornarAsync(
         int clienteId,
-        string perfil,
+        PerfilRiscoTipoEnum perfil,
         int pontuacao,
-        string explicacao)
+        string descricao)
     {
         var dataAtual = DateTime.Now;
 
-        // Verifica se já existe um registro de perfil para o cliente
+        // Busca perfil já existente
         var existente = await _db.PerfisClientes
             .FirstOrDefaultAsync(p => p.ClienteId == clienteId);
 
@@ -132,7 +283,7 @@ public class RiskProfileService : IRiskProfileService
             existente = new PerfilCliente
             {
                 ClienteId = clienteId,
-                Perfil = perfil,
+                Perfil = perfil.ToString(), // grava como texto
                 Pontuacao = pontuacao,
                 UltimaAtualizacao = dataAtual
             };
@@ -140,20 +291,24 @@ public class RiskProfileService : IRiskProfileService
         }
         else
         {
-            existente.Perfil = perfil;
+            existente.Perfil = perfil.ToString();
             existente.Pontuacao = pontuacao;
             existente.UltimaAtualizacao = dataAtual;
         }
 
         await _db.SaveChangesAsync();
 
+        // Monta DTO exatamente no padrão do enunciado (perfil, pontuacao, descricao)
         return new PerfilRiscoResponse
         {
             ClienteId = clienteId,
-            Perfil = perfil,
+            Perfil = perfil.ToString(),
+            PerfilTipo = perfil,
             Pontuacao = pontuacao,
             UltimaAtualizacao = dataAtual,
-            Explicacao = explicacao
+            Descricao = descricao
         };
     }
+
+    #endregion
 }

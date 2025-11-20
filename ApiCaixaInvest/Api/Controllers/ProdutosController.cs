@@ -1,43 +1,80 @@
-﻿using ApiCaixaInvest.Application.Dtos.Responses.Produtos;
-using ApiCaixaInvest.Application.Interfaces;
+﻿using ApiCaixaInvest.Domain.Models;
+using ApiCaixaInvest.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Swashbuckle.AspNetCore.Annotations;
+using Swashbuckle.AspNetCore.Filters;
 
-namespace ApiCaixaInvest.Api.Controllers;
-
-[ApiController]
-[Route("api")]
-[Authorize]
-public class ProdutosController : ControllerBase
+namespace ApiCaixaInvest.Api.Controllers
 {
-    private readonly IProdutosService _produtosService;
-
-    public ProdutosController(IProdutosService produtosService)
+    [ApiController]
+    [Route("api/produtos")]
+    [Authorize]
+    public class ProdutosController : ControllerBase
     {
-        _produtosService = produtosService;
-    }
+        private readonly ApiCaixaInvestDbContext _db;
 
-    /// <summary>
-    /// Retorna a lista de produtos recomendados para um determinado perfil de risco.
-    /// </summary>
-    /// <remarks>
-    /// Perfis aceitos: Conservador, Moderado, Agressivo.
-    /// </remarks>
-    [HttpGet("produtos-recomendados/{perfil}")]
-    public async Task<ActionResult<IEnumerable<ProdutoRecomendadoResponse>>> GetProdutosRecomendados(string perfil)
-    {
-        try
+        public ProdutosController(ApiCaixaInvestDbContext db)
         {
-            var produtos = await _produtosService.ObterProdutosRecomendadosAsync(perfil);
+            _db = db;
+        }
+
+        [HttpGet]
+        [SwaggerOperation(
+            Summary = "Lista os produtos de investimento disponíveis.",
+            Description = "Consulta todos os produtos cadastrados no banco e utilizados nas simulações e recomendações."
+        )]
+        [SwaggerResponse(StatusCodes.Status200OK, "Lista de produtos retornada com sucesso.", typeof(IEnumerable<ProdutoInvestimento>))]
+        [SwaggerResponseExample(StatusCodes.Status200OK, typeof(ProdutosListaExample))]
+        [SwaggerResponse(StatusCodes.Status401Unauthorized, "Token JWT ausente ou inválido.")]
+        public async Task<ActionResult<IEnumerable<ProdutoInvestimento>>> GetProdutos()
+        {
+            var produtos = await _db.ProdutosInvestimento
+                .OrderBy(p => p.Risco)
+                .ThenBy(p => p.Nome)
+                .ToListAsync();
+
             return Ok(produtos);
         }
-        catch (ArgumentException ex)
+
+        [HttpGet("{id:int}")]
+        [SwaggerOperation(
+            Summary = "Consulta um produto específico por identificador.",
+            Description = "Retorna os detalhes de um produto cadastrado."
+        )]
+        [SwaggerResponse(StatusCodes.Status200OK, "Produto encontrado.", typeof(ProdutoInvestimento))]
+        [SwaggerResponseExample(StatusCodes.Status200OK, typeof(ProdutoPorIdExample))]
+        [SwaggerResponse(StatusCodes.Status401Unauthorized, "Token JWT ausente ou inválido.")]
+        [SwaggerResponse(StatusCodes.Status404NotFound, "Produto não encontrado.")]
+        public async Task<ActionResult<ProdutoInvestimento>> GetProdutoPorId(int id)
         {
-            return BadRequest(new { message = ex.Message });
+            var produto = await _db.ProdutosInvestimento.FindAsync(id);
+
+            if (produto == null)
+                return NotFound(new { mensagem = "Produto não encontrado." });
+
+            return Ok(produto);
         }
-        catch (InvalidOperationException ex)
+
+        [HttpGet("risco/{risco}")]
+        [SwaggerOperation(
+            Summary = "Lista produtos filtrados por nível de risco.",
+            Description = "Riscos aceitos: Baixo, Médio, Alto. Pesquisa é case-insensitive."
+        )]
+        [SwaggerResponse(StatusCodes.Status200OK, "Lista de produtos filtrada retornada com sucesso.", typeof(IEnumerable<ProdutoInvestimento>))]
+        [SwaggerResponseExample(StatusCodes.Status200OK, typeof(ProdutosPorRiscoExample))]
+        [SwaggerResponse(StatusCodes.Status401Unauthorized, "Token JWT ausente ou inválido.")]
+        public async Task<ActionResult<IEnumerable<ProdutoInvestimento>>> GetProdutosPorRisco(string risco)
         {
-            return BadRequest(new { message = ex.Message });
+            var riscoNormalizado = risco.Trim().ToLower();
+
+            var produtos = await _db.ProdutosInvestimento
+                .Where(p => p.Risco.ToLower() == riscoNormalizado)
+                .OrderBy(p => p.Nome)
+                .ToListAsync();
+
+            return Ok(produtos);
         }
     }
 }

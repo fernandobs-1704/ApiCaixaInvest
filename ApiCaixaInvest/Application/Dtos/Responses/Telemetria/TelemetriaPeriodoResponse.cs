@@ -5,6 +5,13 @@
 /// </summary>
 public class TelemetriaPeriodoResponse
 {
+    /// <summary>
+    /// Data inicial do período analisado.
+    /// </summary>
     public DateOnly Inicio { get; set; }
+
+    /// <summary>
+    /// Data final do período analisado.
+    /// </summary>
     public DateOnly Fim { get; set; }
 }

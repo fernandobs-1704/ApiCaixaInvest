@@ -1,5 +1,8 @@
 ﻿namespace ApiCaixaInvest.Application.Dtos.Responses.Auth;
 
+/// <summary>
+/// Resposta de autenticação contendo o token JWT e informações do usuário.
+/// </summary>
 public class LoginResponse
 {
     /// <summary>
@@ -23,7 +26,7 @@ public class LoginResponse
     public string Email { get; set; } = string.Empty;
 
     /// <summary>
-    /// Perfil/regra de acesso (ex: Cliente, Gestor).
+    /// Perfil/regra de acesso (ex.: Cliente, Gestor).
     /// </summary>
     public string Perfil { get; set; } = string.Empty;
 }

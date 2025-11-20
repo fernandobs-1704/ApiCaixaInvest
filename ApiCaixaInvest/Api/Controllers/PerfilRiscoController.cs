@@ -1,7 +1,10 @@
-﻿using ApiCaixaInvest.Application.Dtos.Responses.PerfilRisco;
-using ApiCaixaInvest.Infrastructure.Services;
+﻿using ApiCaixaInvest.Api.SwaggerExamples.PerfilRisco;
+using ApiCaixaInvest.Application.Dtos.Responses.PerfilRisco;
+using ApiCaixaInvest.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
+using Swashbuckle.AspNetCore.Filters;
 
 namespace ApiCaixaInvest.Api.Controllers;
 
@@ -10,24 +13,28 @@ namespace ApiCaixaInvest.Api.Controllers;
 [Authorize]
 public class PerfilRiscoController : ControllerBase
 {
-    private readonly RiskProfileService _riskProfileService;
+    private readonly IRiskProfileService _riskProfileService;
 
-    public PerfilRiscoController(RiskProfileService riskProfileService)
+    public PerfilRiscoController(IRiskProfileService riskProfileService)
     {
         _riskProfileService = riskProfileService;
     }
 
-    /// <summary>
-    /// Calcula e retorna o perfil de risco do cliente.
-    /// </summary>
-    /// <remarks>
-    /// Analisa o histórico de investimentos e classifica o cliente como conservador, moderado ou agressivo.
-    /// </remarks>
     [HttpGet("perfil-risco/{clienteId:int}")]
+    [SwaggerOperation(
+        Summary = "Calcula e retorna o perfil de risco do cliente.",
+        Description = "Analisa o comportamento de investimentos do cliente (volume, frequência e nível de risco dos produtos). " +
+                      "Classifica automaticamente em Conservador, Moderado ou Agressivo."
+    )]
+    [SwaggerResponse(StatusCodes.Status200OK, "Perfil de risco calculado com sucesso.", typeof(PerfilRiscoResponse))]
+    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(PerfilRiscoResponseExample))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest, "Parâmetro clienteId inválido.")]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Token JWT ausente ou inválido.")]
+    [SwaggerResponse(StatusCodes.Status500InternalServerError, "Erro inesperado ao calcular o perfil de risco.")]
     public async Task<ActionResult<PerfilRiscoResponse>> ObterPerfilRisco(int clienteId)
     {
         if (clienteId <= 0)
-            return BadRequest(new { message = "O identificador do cliente deve ser maior que zero." });
+            return BadRequest(new { mensagem = "O identificador do cliente deve ser maior que zero." });
 
         try
         {
@@ -36,7 +43,7 @@ public class PerfilRiscoController : ControllerBase
         }
         catch (Exception)
         {
-            return StatusCode(500, new { message = "Erro ao calcular o perfil de risco do cliente." });
+            return StatusCode(500, new { mensagem = "Erro ao calcular o perfil de risco do cliente." });
         }
     }
 }

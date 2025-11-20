@@ -1,7 +1,10 @@
-﻿using ApiCaixaInvest.Application.Dtos.Responses.Telemetria;
+﻿using ApiCaixaInvest.Api.SwaggerExamples.Telemetria;
+using ApiCaixaInvest.Application.Dtos.Responses.Telemetria;
 using ApiCaixaInvest.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
+using Swashbuckle.AspNetCore.Filters;
 
 namespace ApiCaixaInvest.Api.Controllers;
 
@@ -17,14 +20,22 @@ public class TelemetriaController : ControllerBase
         _telemetriaQueryService = telemetriaQueryService;
     }
 
-    /// <summary>
-    /// Retorna o resumo de telemetria dos serviços da API em um período.
-    /// </summary>
-    /// <remarks>
-    /// Informe as datas de início e fim no formato yyyy-MM-dd via query string.
-    /// Exemplo: GET /api/telemetria?inicio=2025-10-01&amp;fim=2025-10-31
-    /// </remarks>
     [HttpGet("telemetria")]
+    [SwaggerOperation(
+        Summary = "Retorna o resumo de telemetria dos serviços da API.",
+        Description = "Informa o volume de chamadas e o tempo médio de resposta por serviço " +
+                      "em um período informado. Use os parâmetros de query 'inicio' e 'fim' " +
+                      "no formato yyyy-MM-dd."
+    )]
+    [SwaggerResponse(
+        StatusCodes.Status200OK,
+        "Resumo de telemetria retornado com sucesso.",
+        typeof(TelemetriaResponse))]
+    [SwaggerResponseExample(
+        StatusCodes.Status200OK,
+        typeof(TelemetriaResponseExample))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest, "Período inválido (data de fim menor que a de início).")]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Token JWT ausente ou inválido.")]
     public async Task<ActionResult<TelemetriaResponse>> GetTelemetria(
         [FromQuery] DateOnly inicio,
         [FromQuery] DateOnly fim)

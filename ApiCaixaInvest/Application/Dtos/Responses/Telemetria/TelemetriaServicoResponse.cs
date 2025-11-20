@@ -5,7 +5,18 @@
 /// </summary>
 public class TelemetriaServicoResponse
 {
+    /// <summary>
+    /// Nome do serviço/end-point (ex.: GET /api/simulacoes).
+    /// </summary>
     public string Nome { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Quantidade total de chamadas registradas para o serviço.
+    /// </summary>
     public int QuantidadeChamadas { get; set; }
+
+    /// <summary>
+    /// Tempo médio de resposta em milissegundos.
+    /// </summary>
     public long MediaTempoRespostaMs { get; set; }
 }
