@@ -172,5 +172,5 @@ A API Caixa Invest entrega:
 ✔ Docker pronto para uso  
 ✔ Documentação limpa e objetiva  
 
-Pronta para produção, análise técnica ou apresentação.
+
 
