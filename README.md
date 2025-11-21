@@ -87,9 +87,6 @@ Baseado em:
 
 # 3. Perfil de Risco Dinâmico (Explicação Detalhada)
 
-Este módulo é o **coração da solução**.  
-Ele demonstra claramente a capacidade da API de **evoluir o perfil de risco do cliente ao longo do tempo**, atendendo perfeitamente ao enunciado.
-
 A seguir está a explicação completa do algoritmo implementado.
 
 ---
@@ -106,12 +103,14 @@ Busca todos investimentos efetivados para o cliente.
 ### **2) Volume Total Investido**
 Quanto maior o volume, maior a tolerância ao risco.
 
-| Volume Total Investido | Pontos |
-|------------------------|--------|
-| < 5.000                | 10     |
-| < 20.000               | 20     |
-| < 100.000              | 30     |
-| ≥ 100.000              | 40     |
+### Pontuação por Volume Total Investido
+
+| Faixa de Volume (R$)         | Pontos |
+|------------------------------|--------|
+| **0 a 4.999,99**             | 10     |
+| **5.000,00 a 19.999,99**     | 20     |
+| **20.000,00 a 99.999,99**    | 30     |
+| **≥ 100.000,00**             | 40     |
 
 ---
 
@@ -138,23 +137,28 @@ Pontos = `% de exposição * 40`
 ### **5) Liquidez Média dos Produtos**
 Quanto menor a liquidez, mais aversão a ser identificado.
 
-| Liquidez (dias) | Pontos |
-|------------------|--------|
-| ≤ 30             | 40     |
-| ≤ 90             | 25     |
-| > 90             | 10     |
+### Pontuação por Liquidez
+
+| Faixa de Liquidez (dias) | Pontos |
+|--------------------------|--------|
+| **0 a 30**               | 40     |
+| **31 a 90**              | 25     |
+| **> 90**                 | 10     |
 
 ---
 
 ### **6) Rentabilidade Média dos Produtos**
 Avalia se o cliente busca maior retorno.
 
-| Rentabilidade | Pontos |
-|---------------|--------|
-| < 8% a.a.     | 10     |
-| < 12% a.a.    | 20     |
-| < 20% a.a.    | 30     |
-| ≥ 20% a.a.    | 40     |
+### Pontuação por Rentabilidade
+
+| Rentabilidade Anual (a.a.) | Pontos |
+|----------------------------|--------|
+| **0% até 7,99%**           | 10     |
+| **8,0% até 11,99%**         | 20     |
+| **12,0% até 19,99%**        | 30     |
+| **≥ 20%**                  | 40     |
+
 
 ---
 
