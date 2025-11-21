@@ -1,9 +1,11 @@
-﻿using ApiCaixaInvest.Application.Dtos.Responses.PerfilRisco;
+﻿using System.Text.Json;
+using ApiCaixaInvest.Application.Dtos.Responses.PerfilRisco;
 using ApiCaixaInvest.Application.Interfaces;
 using ApiCaixaInvest.Domain.Enums;
 using ApiCaixaInvest.Domain.Models;
 using ApiCaixaInvest.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using StackExchange.Redis;
 
 namespace ApiCaixaInvest.Infrastructure.Services;
 
@@ -11,14 +13,20 @@ namespace ApiCaixaInvest.Infrastructure.Services;
 /// Serviço responsável por calcular e persistir o perfil de risco do cliente,
 /// considerando volume, frequência, liquidez e rentabilidade, conforme enunciado,
 /// e enriquecendo o resultado com um modelo Markoviano de tendência futura de perfil.
+/// Também grava o resultado em cache Redis (opcional), sem alterar a lógica de cálculo.
 /// </summary>
 public class PerfilRiscoService : IRiskProfileService
 {
     private readonly ApiCaixaInvestDbContext _db;
+    private readonly IDatabase? _cache;
 
-    public PerfilRiscoService(ApiCaixaInvestDbContext db)
+    private const string CacheKeyPrefixPerfil = "perfil-risco:";
+    private const string CacheKeyPrefixIa = "perfil-risco-ia:";
+
+    public PerfilRiscoService(ApiCaixaInvestDbContext db, IConnectionMultiplexer? redis = null)
     {
         _db = db;
+        _cache = redis?.GetDatabase();
     }
 
     #region Matriz de transição (Modelo Markoviano)
@@ -27,11 +35,6 @@ public class PerfilRiscoService : IRiskProfileService
     /// Matriz de transição Markoviana entre perfis de risco.
     /// Cada linha representa o perfil atual e as colunas as probabilidades
     /// de migração para cada perfil (Conservador, Moderado, Agressivo).
-    /// 
-    /// Exemplo (interpretação):
-    /// - De Conservador para Conservador: 0.80 (80%)
-    /// - De Conservador para Moderado:    0.18 (18%)
-    /// - De Conservador para Agressivo:   0.02 (2%)
     /// </summary>
     private static readonly Dictionary<PerfilRiscoTipoEnum, Dictionary<PerfilRiscoTipoEnum, double>> _matrizTransicao
         = new()
@@ -56,10 +59,6 @@ public class PerfilRiscoService : IRiskProfileService
             }
         };
 
-    /// <summary>
-    /// Retorna o dicionário de tendência para o próximo perfil
-    /// a partir do perfil atual, convertendo enum -> string.
-    /// </summary>
     private static Dictionary<string, double> ObterTendenciaPerfis(PerfilRiscoTipoEnum perfilAtual)
     {
         if (!_matrizTransicao.TryGetValue(perfilAtual, out var linha))
@@ -68,10 +67,6 @@ public class PerfilRiscoService : IRiskProfileService
         return linha.ToDictionary(kv => kv.Key.ToString(), kv => kv.Value);
     }
 
-    /// <summary>
-    /// Retorna o próximo perfil mais provável (maior probabilidade),
-    /// ou null se não houver mapeamento.
-    /// </summary>
     private static string? ObterProximoPerfilProvavel(PerfilRiscoTipoEnum perfilAtual)
     {
         if (!_matrizTransicao.TryGetValue(perfilAtual, out var linha) || linha.Count == 0)
@@ -144,7 +139,6 @@ public class PerfilRiscoService : IRiskProfileService
         // 5) Preferência por liquidez vs rentabilidade via produtos de investimento
         var produtos = await _db.ProdutosInvestimento.ToListAsync();
 
-        // Faz um "join" aproximado por Tipo (case-insensitive)
         var joinHistProd = (from h in historico
                             join p in produtos
                                 on h.Tipo.ToLower() equals p.Tipo.ToLower()
@@ -153,28 +147,26 @@ public class PerfilRiscoService : IRiskProfileService
                             select new { Historico = h, Produto = p })
                             .ToList();
 
-        // Média de liquidez dos produtos efetivamente usados (fallback para 30 dias)
         decimal mediaLiquidezDias = joinHistProd
             .Where(x => x.Produto != null)
             .Select(x => (decimal)x.Produto!.LiquidezDias)
             .DefaultIfEmpty(30m)
             .Average();
 
-        // Média de rentabilidade anual dos produtos (fallback 0.10 = 10% a.a.)
         decimal mediaRentabilidade = joinHistProd
             .Where(x => x.Produto != null)
             .Select(x => x.Produto!.RentabilidadeAnual)
             .DefaultIfEmpty(0.10m)
             .Average();
 
-        // 6) Cálculo dos "scores" individuais (cada eixo)
+        // 6) Scores
         int scoreVolume = CalcularScoreVolume(totalInvestido);
         int scoreFrequencia = CalcularScoreFrequencia(frequencia12Meses);
         int scoreLiquidez = CalcularScoreLiquidez(mediaLiquidezDias);
         int scoreRentabilidade = CalcularScoreRentabilidade(mediaRentabilidade);
         int scoreRiscoCarteira = CalcularScoreRiscoCarteira(percAlta);
 
-        // 7) Pontuação final (soma dos eixos)
+        // 7) Pontuação final
         int pontuacaoFinal =
             scoreVolume +
             scoreFrequencia +
@@ -182,7 +174,7 @@ public class PerfilRiscoService : IRiskProfileService
             scoreRentabilidade +
             scoreRiscoCarteira;
 
-        // 8) Classificação do perfil com base na pontuação global
+        // 8) Classificação
         PerfilRiscoTipoEnum perfilTipo = pontuacaoFinal switch
         {
             <= 80 => PerfilRiscoTipoEnum.Conservador,
@@ -204,63 +196,47 @@ public class PerfilRiscoService : IRiskProfileService
 
     #region Cálculo de scores
 
-    private static int CalcularScoreVolume(decimal totalInvestido)
-    {
-        // Escala simples: quanto maior o volume, maior a capacidade/tolerância de risco
-        return totalInvestido switch
+    private static int CalcularScoreVolume(decimal totalInvestido) =>
+        totalInvestido switch
         {
             < 5_000m => 10,
             < 20_000m => 20,
             < 100_000m => 30,
             _ => 40
         };
-    }
 
-    private static int CalcularScoreFrequencia(int freq12Meses)
-    {
-        // Quanto mais movimenta, mais propenso a buscar oportunidades (mais agressivo)
-        return freq12Meses switch
+    private static int CalcularScoreFrequencia(int freq12Meses) =>
+        freq12Meses switch
         {
-            0 => 10, // quase não mexe
+            0 => 10,
             1 => 20,
             <= 6 => 30,
-            _ => 40  // movimentação alta
+            _ => 40
         };
-    }
 
-    private static int CalcularScoreLiquidez(decimal mediaLiquidezDias)
-    {
-        // Poucos dias de liquidez => forte preferência por liquidez (tende a conservador),
-        // mas aqui traduzimos em "score de comportamento" que soma no total.
-        return mediaLiquidezDias switch
+    private static int CalcularScoreLiquidez(decimal mediaLiquidezDias) =>
+        mediaLiquidezDias switch
         {
-            <= 30m => 40, // alta liquidez
+            <= 30m => 40,
             <= 90m => 25,
-            _ => 10  // aceita baixa liquidez => mais tolerante a risco
+            _ => 10
         };
-    }
 
-    private static int CalcularScoreRentabilidade(decimal mediaRentabilidade)
-    {
-        // Maior rentabilidade média sugere busca por retorno maior (mais agressivo)
-        return mediaRentabilidade switch
+    private static int CalcularScoreRentabilidade(decimal mediaRentabilidade) =>
+        mediaRentabilidade switch
         {
             < 0.08m => 10,
             < 0.12m => 20,
             < 0.20m => 30,
             _ => 40
         };
-    }
 
-    private static int CalcularScoreRiscoCarteira(decimal percAlta)
-    {
-        // Proporção de ativos de alto risco na carteira, mapeada para 0 a 40 pontos
-        return (int)Math.Round(percAlta * 40m, 0);
-    }
+    private static int CalcularScoreRiscoCarteira(decimal percAlta) =>
+        (int)Math.Round(percAlta * 40m, 0);
 
     #endregion
 
-    #region Helpers de classificação de produtos por tipo (alto risco x renda fixa)
+    #region Helpers de classificação de produtos
 
     private static bool EhRendaFixa(string tipo)
     {
@@ -288,12 +264,12 @@ public class PerfilRiscoService : IRiskProfileService
             || tipo.Contains("multimercado")
             || tipo.Contains("cripto")
             || tipo.Contains("derivativo")
-            || tipo.Contains("fundo"); // fundos em geral tendem a ter mais risco
+            || tipo.Contains("fundo");
     }
 
     #endregion
 
-    #region Montagem da descrição (descricao) para o response
+    #region Descrição
 
     private string MontarDescricao(
         PerfilRiscoTipoEnum perfil,
@@ -332,7 +308,7 @@ public class PerfilRiscoService : IRiskProfileService
 
     #endregion
 
-    #region Persistência e montagem do DTO de resposta
+    #region Persistência + cache
 
     private async Task<PerfilRiscoResponse> SalvarERetornarAsync(
         int clienteId,
@@ -342,7 +318,6 @@ public class PerfilRiscoService : IRiskProfileService
     {
         var dataAtual = DateTime.Now;
 
-        // Busca perfil já existente
         var existente = await _db.PerfisClientes
             .FirstOrDefaultAsync(p => p.ClienteId == clienteId);
 
@@ -351,7 +326,7 @@ public class PerfilRiscoService : IRiskProfileService
             existente = new PerfilCliente
             {
                 ClienteId = clienteId,
-                Perfil = perfil.ToString(), // grava como texto
+                Perfil = perfil.ToString(),
                 Pontuacao = pontuacao,
                 UltimaAtualizacao = dataAtual
             };
@@ -366,12 +341,10 @@ public class PerfilRiscoService : IRiskProfileService
 
         await _db.SaveChangesAsync();
 
-        // 🔥 Modelo Markoviano: calcula tendência e próximo perfil provável
         var tendencia = ObterTendenciaPerfis(perfil);
         var proximoPerfil = ObterProximoPerfilProvavel(perfil);
 
-        // Monta DTO exatamente no padrão do enunciado + enriquecimento preditivo
-        return new PerfilRiscoResponse
+        var response = new PerfilRiscoResponse
         {
             ClienteId = clienteId,
             Perfil = perfil.ToString(),
@@ -382,13 +355,32 @@ public class PerfilRiscoService : IRiskProfileService
             TendenciaPerfis = tendencia,
             ProximoPerfilProvavel = proximoPerfil
         };
+
+        // Grava no Redis (cache de leitura rápida para outros consumers)
+        if (_cache != null)
+        {
+            try
+            {
+                var json = JsonSerializer.Serialize(response);
+                await _cache.StringSetAsync(
+                    $"{CacheKeyPrefixPerfil}{clienteId}",
+                    json,
+                    TimeSpan.FromMinutes(5));
+            }
+            catch
+            {
+                // Cache não pode derrubar o serviço nem os testes.
+            }
+        }
+
+        return response;
     }
 
     #endregion
 
     /// <summary>
-    /// Gera uma explicação didática em linguagem natural para o perfil de risco,
-    /// incluindo resumo, explicação do nível de risco, sugestões, ações e alertas.
+    /// Gera explicação didática em linguagem natural
+    /// e grava também no Redis (opcional).
     /// </summary>
     public async Task<PerfilRiscoIaResponse> GerarExplicacaoIaAsync(int clienteId)
     {
@@ -396,7 +388,6 @@ public class PerfilRiscoService : IRiskProfileService
             throw new ArgumentOutOfRangeException(nameof(clienteId),
                 "O identificador do cliente deve ser maior que zero.");
 
-        // Garante que o perfil está calculado e persistido
         var perfilBase = await CalcularPerfilAsync(clienteId);
 
         var resumo = MontarResumo(perfilBase);
@@ -405,7 +396,7 @@ public class PerfilRiscoService : IRiskProfileService
         var acoes = MontarAcoesRecomendadas(perfilBase);
         var alertas = MontarAlertasImportantes(perfilBase);
 
-        return new PerfilRiscoIaResponse
+        var ia = new PerfilRiscoIaResponse
         {
             ClienteId = perfilBase.ClienteId,
             Perfil = perfilBase.Perfil,
@@ -418,14 +409,30 @@ public class PerfilRiscoService : IRiskProfileService
             TendenciaPerfis = perfilBase.TendenciaPerfis,
             ProximoPerfilProvavel = perfilBase.ProximoPerfilProvavel
         };
+
+        if (_cache != null)
+        {
+            try
+            {
+                var json = JsonSerializer.Serialize(ia);
+                await _cache.StringSetAsync(
+                    $"{CacheKeyPrefixIa}{clienteId}",
+                    json,
+                    TimeSpan.FromMinutes(5));
+            }
+            catch
+            {
+                // Mesmo esquema: falha de cache não quebra nada.
+            }
+        }
+
+        return ia;
     }
 
+    #region Helpers IA
 
-    #region Helpers de narrativa IA (didáticos, em 3ª pessoa)
-
-    private static string MontarResumo(PerfilRiscoResponse perfil)
-    {
-        return perfil.PerfilTipo switch
+    private static string MontarResumo(PerfilRiscoResponse perfil) =>
+        perfil.PerfilTipo switch
         {
             PerfilRiscoTipoEnum.Conservador =>
                 "O seu perfil é conservador, priorizando segurança, estabilidade e menor oscilação, mesmo que isso reduza o potencial de ganho.",
@@ -436,34 +443,22 @@ public class PerfilRiscoService : IRiskProfileService
             _ =>
                 "Seu perfil foi definido a partir do comportamento recente dos seus investimentos, combinando risco e retorno."
         };
-    }
 
+    private static string MontarVisaoComportamentoInvestidor(PerfilRiscoResponse perfil) =>
+        "Seu perfil foi calculado a partir do seu histórico de investimentos, levando em conta o volume aplicado, a frequência das suas movimentações, a liquidez dos produtos que você utiliza e a sua exposição a ativos de maior risco. Essa análise reflete o seu comportamento real como investidor, e não apenas respostas teóricas de um questionário.";
 
-    private static string MontarVisaoComportamentoInvestidor(PerfilRiscoResponse perfil)
-    {
-        return
-            "Seu perfil foi calculado a partir do seu histórico de investimentos, levando em conta o volume aplicado, a frequência das suas movimentações, a liquidez dos produtos que você utiliza e a sua exposição a ativos de maior risco. Essa análise reflete o seu comportamento real como investidor, e não apenas respostas teóricas de um questionário.";
-    }
-
-
-    private static string MontarSugestoesEstrategicas(PerfilRiscoResponse perfil)
-    {
-        return perfil.PerfilTipo switch
+    private static string MontarSugestoesEstrategicas(PerfilRiscoResponse perfil) =>
+        perfil.PerfilTipo switch
         {
             PerfilRiscoTipoEnum.Conservador =>
                 "Como investidor de perfil conservador, você pode fortalecer sua segurança mantendo uma reserva de emergência bem estruturada e, ao mesmo tempo, considerar incluir gradualmente uma pequena parcela em ativos moderados para reduzir o impacto da inflação.",
-
             PerfilRiscoTipoEnum.Moderado =>
                 "Como investidor de perfil moderado, você pode obter bons resultados equilibrando sua carteira entre renda fixa e ativos de maior risco, enquanto revisa periodicamente sua alocação para evitar concentrações excessivas.",
-
             PerfilRiscoTipoEnum.Agressivo =>
                 "Com seu perfil agressivo, você pode aproveitar oportunidades de maior retorno em estratégias de longo prazo e, ao mesmo tempo, proteger objetivos essenciais mantendo uma parte do patrimônio em produtos conservadores.",
-
             _ =>
                 "Com seu perfil atual, uma estratégia eficiente é manter diversificação entre diferentes classes de ativos e ajustar o nível de risco conforme sua necessidade e objetivos evoluem."
         };
-    }
-
 
     private static string MontarAcoesRecomendadas(PerfilRiscoResponse perfil)
     {
@@ -474,18 +469,14 @@ public class PerfilRiscoService : IRiskProfileService
         {
             PerfilRiscoTipoEnum.Conservador =>
                 $"Com a sua pontuação de {score} e o enquadramento no perfil {tipo}, uma boa ação é definir limites mínimos em ativos conservadores e testar, com segurança, uma pequena exposição a produtos mais arrojados para fortalecer o potencial da sua carteira no longo prazo.",
-
             PerfilRiscoTipoEnum.Moderado =>
                 $"A partir da sua pontuação de {score} e do perfil {tipo}, é recomendado estabelecer faixas-alvo de alocação entre renda fixa e renda variável, revisando sua carteira semestralmente para garantir que ela continue alinhada aos seus objetivos.",
-
             PerfilRiscoTipoEnum.Agressivo =>
                 $"Com a sua pontuação de {score} e o perfil {tipo}, é importante definir limites máximos de exposição a ativos muito voláteis e adotar rebalanceamentos periódicos para evitar que eventos de mercado deixem sua carteira mais arriscada do que você gostaria.",
-
             _ =>
                 $"Considerando sua pontuação de {score} e o perfil {tipo}, uma ação útil é mapear metas de alocação por prazo e acompanhar de tempos em tempos se a distribuição dos seus investimentos continua compatível com sua classificação."
         };
     }
-
 
     private static string MontarAlertasImportantes(PerfilRiscoResponse perfil)
     {
@@ -493,13 +484,10 @@ public class PerfilRiscoService : IRiskProfileService
         {
             PerfilRiscoTipoEnum.Conservador =>
                 "Como investidor conservador, é importante ficar atento ao risco de sua rentabilidade ficar abaixo da inflação quando há concentração excessiva em produtos de curtíssimo prazo.",
-
             PerfilRiscoTipoEnum.Moderado =>
                 "Com seu perfil moderado, é essencial acompanhar a parcela mais exposta ao risco, já que oscilações maiores podem ocorrer se a carteira não for revisada periodicamente.",
-
             PerfilRiscoTipoEnum.Agressivo =>
                 "Com seu perfil agressivo, o principal alerta está na possibilidade de perdas relevantes durante períodos de forte volatilidade, especialmente se você não mantiver uma reserva em ativos conservadores.",
-
             _ =>
                 "Com seu perfil atual, é importante garantir que sua exposição ao risco esteja alinhada aos seus objetivos financeiros e tolerância a variações."
         };
@@ -515,8 +503,6 @@ public class PerfilRiscoService : IRiskProfileService
 
         return alertaBase;
     }
-
-
 
     #endregion
 }
