@@ -17,7 +17,6 @@ public class AuthControllerIntegrationTests
 
     public AuthControllerIntegrationTests(CustomWebApplicationFactory factory)
     {
-        // Cria um HttpClient que chama a API "de verdade" em memória
         _client = factory.CreateClient();
     }
 

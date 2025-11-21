@@ -73,12 +73,10 @@ namespace ApiCaixaInvest.Tests.Integration
             // Act
             var response = await client.PostAsJsonAsync("/api/simular-investimento", request);
 
-            // DEBUG: Verifique o conteúdo do BadRequest
             if (response.StatusCode == HttpStatusCode.BadRequest)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
 
-                // Tente decodificar como objeto para ver a estrutura
                 try
                 {
                     var errorObj = await response.Content.ReadFromJsonAsync<object>();
@@ -89,10 +87,8 @@ namespace ApiCaixaInvest.Tests.Integration
                 }
             }
 
-            // Assert - Mude temporariamente para ver o erro
             if (response.StatusCode != HttpStatusCode.OK)
             {
-                // Vamos investigar o que está errado primeiro
                 Assert.True(false, $"Expected OK but got {response.StatusCode}. Check console for details.");
             }
 
