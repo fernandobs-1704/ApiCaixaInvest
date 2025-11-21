@@ -192,37 +192,30 @@ O algoritmo monta automaticamente uma explicação detalhada considerando:
 
 Todos estão documentados via **Swagger/OpenAPI**.
 
-### **Autenticação**
-- JWT Bearer
+## 📌 Tabela de Endpoints da API
 
-### **Simulações**
-| Método | Endpoint | Finalidade |
-|--------|----------|------------|
-| POST | `/api/simular-investimento` | Simula um investimento |
-| POST | `/api/simular-e-contratar-investimento` | Simula **e já contrata** |
-| GET | `/api/simulacoes` | Lista histórico |
-| GET | `/api/simulacoes/por-produto-dia` | Consolidação por produto/dia |
-
-### **Perfil de Risco**
-| GET | `/api/perfil-risco/{clienteId}` | Calcula e retorna perfil atual |
-
-### **Investimentos**
-| GET | `/api/investimentos/{clienteId}` | Histórico de investimentos |
-| POST | `/api/investimentos/efetivar` | Efetiva simulações |
-
-### **Produtos**
-| GET | `/api/produtos` | Lista produtos |
-| GET | `/api/produtos/{id}` | Detalhes do produto |
-| GET | `/api/produtos/risco/{risco}` | Filtro por risco |
-
-### **Recomendações**
-| GET | `/api/recomendacoes/produtos/{perfil}` | Lista recomendações |
-
-### **Telemetria**
-| GET | `/api/telemetria?inicio=AAAA-MM-DD&fim=AAAA-MM-DD` |
-
-### **Endpoint utilitário**
-| GET | `/api/me` | Confere validade do token |
+| Categoria | Método | Endpoint | Descrição |
+|----------|--------|----------|-----------|
+| **Auth** | POST | `/api/auth/login` | Autentica o usuário e retorna **JWT + RefreshToken**. |
+| **Auth** | POST | `/api/auth/refresh-token` | Renova o token usando um refresh token válido. |
+| **Auth** | GET | `/api/auth/me` | Retorna dados do usuário autenticado (teste do JWT). |
+| **Clientes** | GET | `/api/clientes` | Lista todos os clientes registrados. |
+| **Clientes** | GET | `/api/clientes/{id}` | Retorna dados de um cliente específico. |
+| **Investimentos** | GET | `/api/investimentos/{clienteId}` | Histórico de investimentos efetivados do cliente. |
+| **Investimentos** | POST | `/api/investimentos/efetivar` | Efetiva simulações e recalcula o perfil de risco. |
+| **Perfil de Risco** | GET | `/api/perfil-risco/{clienteId}` | Perfil de risco **básico**, conforme o enunciado. |
+| **Perfil de Risco** | GET | `/api/perfil-risco/detalhado/{clienteId}` | Perfil **detalhado**, com liquidez, frequência, carteira e tendência Markoviana. |
+| **Perfil de Risco** | GET | `/api/perfil-risco-ia/{clienteId}` | Explicação em linguagem natural (IA). |
+| **Produtos** | GET | `/api/produtos` | Lista todos os produtos de investimento. |
+| **Produtos** | GET | `/api/produtos/{id}` | Consulta um produto específico. |
+| **Produtos** | GET | `/api/produtos/risco/{risco}` | Filtra produtos por risco (`Baixo`, `Médio/Medio`, `Alto`). |
+| **Recomendações** | GET | `/api/recomendacoes/produtos/{perfil}` | Recomenda produtos para um perfil informado. |
+| **Recomendações** | GET | `/api/recomendacoes/cliente/{clienteId}` | Recomenda produtos com base no **perfil real** do cliente. |
+| **Simulações** | POST | `/api/simular-investimento` | Simula um investimento e retorna produto validado + resultado. |
+| **Simulações** | POST | `/api/simular-e-contratar-investimento` | Simula **e efetiva** o investimento em uma única operação. |
+| **Simulações** | GET | `/api/simulacoes` | Histórico de todas as simulações realizadas. |
+| **Simulações** | GET | `/api/simulacoes/por-produto-dia` | Resumo de simulações agrupadas por produto e dia. |
+| **Telemetria** | GET | `/api/telemetria?inicio=yyyy-MM-dd&fim=yyyy-MM-dd` | Retorna métricas de uso: volume de chamadas e tempo médio por serviço. |
 
 ---
 
