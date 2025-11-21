@@ -1,0 +1,14 @@
+﻿version: "3.9"
+
+services:
+  apicaixainvest:
+    container_name: apicaixainvest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ASPNETCORE_URLS: "http://+:8080"
+
