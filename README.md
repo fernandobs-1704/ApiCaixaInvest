@@ -231,31 +231,7 @@ A API utiliza:
 
 ---
 
-# 6. Como Executar a Aplicação
-
-### **1. Restaurar pacotes**
-```
-dotnet restore
-```
-
-### **2. Aplicar migrations**
-```
-dotnet ef database update
-```
-
-### **3. Rodar a API**
-```
-dotnet run
-```
-
-### **4. Acessar documentação Swagger**
-```
-http://localhost:5000/swagger
-```
-
----
-
-# 7. Execução via Docker
+# 6. Execução via Docker
 
 A aplicação já possui:
 
@@ -268,20 +244,7 @@ Execução:
 docker compose up --build
 ```
 
----
-
-# 8. Banco de Dados
-
-A API usa **Entity Framework Core** com migrations automáticas.  
-O banco é criado e atualizado automaticamente com:
-
-```
-dotnet ef database update
-```
-
----
-
-# 9. Testes Propostos para Avaliação
+# 7. Testes Propostos para Avaliação
 
 Segue um checklist de testes para validar todas funcionalidades:
 
