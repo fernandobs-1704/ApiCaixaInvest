@@ -1,11 +1,11 @@
-﻿using System.Security.Claims;
-using System.Threading.Tasks;
-using ApiCaixaInvest.Application.Dtos.Requests.Auth;
+﻿using ApiCaixaInvest.Application.Dtos.Requests.Auth;
 using ApiCaixaInvest.Application.Dtos.Responses.Auth;
 using ApiCaixaInvest.Application.Interfaces;
 using ApiCaixaInvest.Controllers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace ApiCaixaInvest.Tests.Controllers
@@ -30,6 +30,17 @@ namespace ApiCaixaInvest.Tests.Controllers
                 if (_returnNull)
                     return Task.FromResult<LoginResponse?>(null);
 
+                return Task.FromResult<LoginResponse?>(_response);
+            }
+
+            // 👇 NOVO: implementação fake do refresh token
+            public Task<LoginResponse?> RenovarTokenAsync(RefreshTokenRequest request)
+            {
+                if (_returnNull)
+                    return Task.FromResult<LoginResponse?>(null);
+
+                // pros testes atuais não importa o conteúdo, então
+                // podemos reutilizar a mesma resposta fake
                 return Task.FromResult<LoginResponse?>(_response);
             }
         }

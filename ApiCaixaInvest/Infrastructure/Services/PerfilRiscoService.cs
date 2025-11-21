@@ -9,7 +9,8 @@ namespace ApiCaixaInvest.Infrastructure.Services;
 
 /// <summary>
 /// Serviço responsável por calcular e persistir o perfil de risco do cliente,
-/// considerando volume, frequência, liquidez e rentabilidade, conforme enunciado.
+/// considerando volume, frequência, liquidez e rentabilidade, conforme enunciado,
+/// e enriquecendo o resultado com um modelo Markoviano de tendência futura de perfil.
 /// </summary>
 public class PerfilRiscoService : IRiskProfileService
 {
@@ -19,6 +20,72 @@ public class PerfilRiscoService : IRiskProfileService
     {
         _db = db;
     }
+
+    #region Matriz de transição (Modelo Markoviano)
+
+    /// <summary>
+    /// Matriz de transição Markoviana entre perfis de risco.
+    /// Cada linha representa o perfil atual e as colunas as probabilidades
+    /// de migração para cada perfil (Conservador, Moderado, Agressivo).
+    /// 
+    /// Exemplo (interpretação):
+    /// - De Conservador para Conservador: 0.80 (80%)
+    /// - De Conservador para Moderado:    0.18 (18%)
+    /// - De Conservador para Agressivo:   0.02 (2%)
+    /// </summary>
+    private static readonly Dictionary<PerfilRiscoTipoEnum, Dictionary<PerfilRiscoTipoEnum, double>> _matrizTransicao
+        = new()
+        {
+            [PerfilRiscoTipoEnum.Conservador] = new()
+            {
+                [PerfilRiscoTipoEnum.Conservador] = 0.80,
+                [PerfilRiscoTipoEnum.Moderado] = 0.18,
+                [PerfilRiscoTipoEnum.Agressivo] = 0.02
+            },
+            [PerfilRiscoTipoEnum.Moderado] = new()
+            {
+                [PerfilRiscoTipoEnum.Conservador] = 0.10,
+                [PerfilRiscoTipoEnum.Moderado] = 0.70,
+                [PerfilRiscoTipoEnum.Agressivo] = 0.20
+            },
+            [PerfilRiscoTipoEnum.Agressivo] = new()
+            {
+                [PerfilRiscoTipoEnum.Conservador] = 0.03,
+                [PerfilRiscoTipoEnum.Moderado] = 0.22,
+                [PerfilRiscoTipoEnum.Agressivo] = 0.75
+            }
+        };
+
+    /// <summary>
+    /// Retorna o dicionário de tendência para o próximo perfil
+    /// a partir do perfil atual, convertendo enum -> string.
+    /// </summary>
+    private static Dictionary<string, double> ObterTendenciaPerfis(PerfilRiscoTipoEnum perfilAtual)
+    {
+        if (!_matrizTransicao.TryGetValue(perfilAtual, out var linha))
+            return new Dictionary<string, double>();
+
+        return linha.ToDictionary(kv => kv.Key.ToString(), kv => kv.Value);
+    }
+
+    /// <summary>
+    /// Retorna o próximo perfil mais provável (maior probabilidade),
+    /// ou null se não houver mapeamento.
+    /// </summary>
+    private static string? ObterProximoPerfilProvavel(PerfilRiscoTipoEnum perfilAtual)
+    {
+        if (!_matrizTransicao.TryGetValue(perfilAtual, out var linha) || linha.Count == 0)
+            return null;
+
+        var proximo = linha
+            .OrderByDescending(kv => kv.Value)
+            .First()
+            .Key;
+
+        return proximo.ToString();
+    }
+
+    #endregion
 
     public async Task<PerfilRiscoResponse> CalcularPerfilAsync(int clienteId)
     {
@@ -163,7 +230,8 @@ public class PerfilRiscoService : IRiskProfileService
 
     private static int CalcularScoreLiquidez(decimal mediaLiquidezDias)
     {
-        // Poucos dias de liquidez => forte preferência por liquidez (tende a conservador)
+        // Poucos dias de liquidez => forte preferência por liquidez (tende a conservador),
+        // mas aqui traduzimos em "score de comportamento" que soma no total.
         return mediaLiquidezDias switch
         {
             <= 30m => 40, // alta liquidez
@@ -298,7 +366,11 @@ public class PerfilRiscoService : IRiskProfileService
 
         await _db.SaveChangesAsync();
 
-        // Monta DTO exatamente no padrão do enunciado (perfil, pontuacao, descricao)
+        // 🔥 Modelo Markoviano: calcula tendência e próximo perfil provável
+        var tendencia = ObterTendenciaPerfis(perfil);
+        var proximoPerfil = ObterProximoPerfilProvavel(perfil);
+
+        // Monta DTO exatamente no padrão do enunciado + enriquecimento preditivo
         return new PerfilRiscoResponse
         {
             ClienteId = clienteId,
@@ -306,7 +378,9 @@ public class PerfilRiscoService : IRiskProfileService
             PerfilTipo = perfil,
             Pontuacao = pontuacao,
             UltimaAtualizacao = dataAtual,
-            Descricao = descricao
+            Descricao = descricao,
+            TendenciaPerfis = tendencia,
+            ProximoPerfilProvavel = proximoPerfil
         };
     }
 

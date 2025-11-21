@@ -6,4 +6,5 @@ namespace ApiCaixaInvest.Application.Interfaces;
 public interface IAuthService
 {
     Task<LoginResponse?> AutenticarAsync(LoginRequest request);
+    Task<LoginResponse?> RenovarTokenAsync(RefreshTokenRequest request);
 }

@@ -5,6 +5,9 @@ using ApiCaixaInvest.Application.Dtos.Responses.Auth;
 using ApiCaixaInvest.Application.Dtos.Responses.Investimentos;
 using ApiCaixaInvest.Application.Dtos.Responses.PerfilRisco;
 using ApiCaixaInvest.Application.Dtos.Responses.Simulacoes;
+using ApiCaixaInvest.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -89,30 +92,44 @@ namespace ApiCaixaInvest.Tests.Integration
             Assert.Equal(HttpStatusCode.OK, simResp1.StatusCode);
             Assert.Equal(HttpStatusCode.OK, simResp2.StatusCode);
 
-            var sim1 = await simResp1.Content.ReadFromJsonAsync<SimularInvestimentoResponse>();
-            var sim2 = await simResp2.Content.ReadFromJsonAsync<SimularInvestimentoResponse>();
+            // Opcional: validar que o corpo bate com o DTO público
+            var simPublic1 = await simResp1.Content.ReadFromJsonAsync<SimularInvestimentoPublicResponse>();
+            var simPublic2 = await simResp2.Content.ReadFromJsonAsync<SimularInvestimentoPublicResponse>();
+            Assert.NotNull(simPublic1);
+            Assert.NotNull(simPublic2);
 
-            Assert.NotNull(sim1);
-            Assert.NotNull(sim2);
-
-            // 2) Efetiva as simulações
-            var efetivarRequest = new EfetivarSimulacoesRequest
+            // 2) Busca as simulações criadas direto no DB (pegando os IDs reais)
+            using (var scope = _factory.Services.CreateScope())
             {
-                ClienteId = clienteId,
-                SimulacaoIds = new List<int> { sim1!.SimulacaoId, sim2!.SimulacaoId }
-            };
+                var db = scope.ServiceProvider.GetRequiredService<ApiCaixaInvestDbContext>();
 
-            var efetivarResp = await client.PostAsJsonAsync("/api/investimentos/efetivar", efetivarRequest);
-            Assert.Equal(HttpStatusCode.OK, efetivarResp.StatusCode);
+                var sims = await db.Simulacoes
+                    .Where(s => s.ClienteId == clienteId)
+                    .OrderBy(s => s.ValorInvestido)
+                    .ToListAsync();
 
-            var resultado = await efetivarResp.Content.ReadFromJsonAsync<EfetivarSimulacoesResultadoResponse>();
-            Assert.NotNull(resultado);
-            Assert.True(resultado!.Sucesso);
-            Assert.Equal(clienteId, resultado.ClienteId);
-            Assert.NotNull(resultado.PerfilRisco);
-            Assert.NotEmpty(resultado.SimulacoesEfetivadas);
+                // Garante que as duas simulações foram geradas
+                Assert.Equal(2, sims.Count);
 
-            // 3) Verifica se investimentos foram criados
+                var efetivarRequest = new EfetivarSimulacoesRequest
+                {
+                    ClienteId = clienteId,
+                    SimulacaoIds = sims.Select(s => s.Id).ToList()
+                };
+
+                // 3) Efetiva as simulações
+                var efetivarResp = await client.PostAsJsonAsync("/api/investimentos/efetivar", efetivarRequest);
+                Assert.Equal(HttpStatusCode.OK, efetivarResp.StatusCode);
+
+                var resultado = await efetivarResp.Content.ReadFromJsonAsync<EfetivarSimulacoesResultadoResponse>();
+                Assert.NotNull(resultado);
+                Assert.True(resultado!.Sucesso);
+                Assert.Equal(clienteId, resultado.ClienteId);
+                Assert.NotNull(resultado.PerfilRisco);
+                Assert.NotEmpty(resultado.SimulacoesEfetivadas);
+            }
+
+            // 4) Verifica se investimentos foram criados
             var getInvResp = await client.GetAsync($"/api/investimentos/{clienteId}");
             Assert.Equal(HttpStatusCode.OK, getInvResp.StatusCode);
 
@@ -120,5 +137,6 @@ namespace ApiCaixaInvest.Tests.Integration
             Assert.NotNull(investimentos);
             Assert.True(investimentos!.Any());
         }
+
     }
 }

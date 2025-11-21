@@ -163,7 +163,7 @@ namespace ApiCaixaInvest.Infrastructure.Services
                     Produto = g.Key.Produto,
                     Data = g.Key.Data,
                     QuantidadeSimulacoes = g.Count(),
-                    MediaValorFinal = g.Average(x => x.ValorFinal)
+                    MediaValorFinal = Math.Round(g.Average(x => x.ValorFinal), 2)
                 })
                 .OrderBy(r => r.Produto)
                 .ThenBy(r => r.Data)

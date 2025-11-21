@@ -13,9 +13,11 @@ public class LoginResponseExample : IExamplesProvider<LoginResponse>
         {
             Token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.exemplo.de.payload.assinatura",
             Tipo = "Bearer",
-            ExpiraEm = DateTime.UtcNow.AddMinutes(30),
+            ExpiraEm = DateTime.UtcNow.AddMinutes(60),
             Email = "caixaverso@caixa.gov.br",
-            Perfil = "Usuario"
+            Perfil = "Usuario",
+            RefreshToken = "f7d8a3c8e9b04c2fb95ea1750c41b1a4",
+            RefreshTokenExpiraEm = DateTime.UtcNow.AddDays(7)
         };
     }
 }

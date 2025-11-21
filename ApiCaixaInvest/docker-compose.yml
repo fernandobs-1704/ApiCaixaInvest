@@ -5,16 +5,27 @@
     container_name: apicaixainvest
     ports:
       - "8080:8080"
+    depends_on:
+      - redis  # 👈 garante que o Redis sobe antes
     environment:
-      # Ambiente
       ASPNETCORE_ENVIRONMENT: "Development"
       ASPNETCORE_URLS: "http://+:8080"
 
-      # Configuração JWT (EXATAMENTE como no appsettings.json)
+      # JWT
       Jwt__Issuer: "ApiCaixaInvest"
       Jwt__Audience: "ApiCaixaInvestClients"
       Jwt__SecretKey: "bXlTdXBlclNlY3JldEtleV9Jc0hlcmVfMTIzNDU2Nzg5IQ=="
       Jwt__ExpirationMinutes: "60"
 
-      # ConnectionString (SQLite dentro do container)
+      # Banco principal
       ConnectionStrings__DefaultConnection: "Data Source=app.db"
+
+      # conexão do Redis (nome do serviço = redis)
+      ConnectionStrings__Redis: "redis:6379"
+
+  redis:
+    image: redis:latest
+    container_name: redis-caixainvest
+    ports:
+      - "6379:6379"   # opcional para acessar da máquina
+    command: ["redis-server", "--appendonly", "yes"]

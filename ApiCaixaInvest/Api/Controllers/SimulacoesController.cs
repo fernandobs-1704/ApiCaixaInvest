@@ -23,28 +23,38 @@ public class SimulacoesController : ControllerBase
 
     [HttpPost("simular-investimento")]
     [SwaggerOperation(
-        Summary = "Simula um investimento.",
-        Description = "Recebe os parâmetros de valor, prazo e tipo de produto, valida contra as regras de negócio " +
-                      "e retorna o produto mais adequado e o resultado da simulação."
-    )]
+    Summary = "Simula um investimento.",
+    Description = "Recebe os parâmetros de valor, prazo e tipo de produto, valida contra as regras de negócio " +
+                  "e retorna o produto mais adequado e o resultado da simulação."
+)]
     [SwaggerRequestExample(typeof(SimularInvestimentoRequest), typeof(SimularInvestimentoRequestExample))]
     [SwaggerResponse(
-        StatusCodes.Status200OK,
-        "Simulação realizada com sucesso.",
-        typeof(SimularInvestimentoResponse))]
+    StatusCodes.Status200OK,
+    "Simulação realizada com sucesso.",
+    typeof(SimularInvestimentoPublicResponse))] 
     [SwaggerResponseExample(
-        StatusCodes.Status200OK,
-        typeof(SimularInvestimentoResponseExample))]
+    StatusCodes.Status200OK,
+    typeof(SimularInvestimentoPublicResponseExample))] // 👈 vamos criar já já
     [SwaggerResponse(StatusCodes.Status400BadRequest, "Parâmetros inválidos ou inconsistentes.")]
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "Token JWT ausente ou inválido.")]
     [SwaggerResponse(StatusCodes.Status500InternalServerError, "Erro inesperado ao simular investimento.")]
-    public async Task<ActionResult<SimularInvestimentoResponse>> SimularInvestimento(
-        [FromBody] SimularInvestimentoRequest request)
+    public async Task<ActionResult<SimularInvestimentoPublicResponse>> SimularInvestimento(
+    [FromBody] SimularInvestimentoRequest request)
     {
         try
         {
+            // Chama o serviço de simulação
             var result = await _simulacoesService.SimularAsync(request);
-            return Ok(result);
+
+            // Mapeia para o DTO público sem ID
+            var publicResult = new SimularInvestimentoPublicResponse
+            {
+                ProdutoValidado = result.ProdutoValidado,
+                ResultadoSimulacao = result.ResultadoSimulacao,
+                DataSimulacao = result.DataSimulacao
+            };
+
+            return Ok(publicResult);
         }
         catch (ArgumentException ex)
         {
@@ -59,6 +69,7 @@ public class SimulacoesController : ControllerBase
             return StatusCode(500, new { message = "Erro inesperado ao simular investimento." });
         }
     }
+
 
     [HttpPost("simular-e-contratar-investimento")]
     [SwaggerOperation(

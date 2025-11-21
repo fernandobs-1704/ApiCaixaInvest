@@ -48,45 +48,45 @@ namespace ApiCaixaInvest.Tests.Integration
         [Fact]
         public async Task GetTelemetria_ComRegistros_DeveRetornarResumo()
         {
-            // Primeiro: popula Telemetria direto no contexto
+            // Arrange: zera a tabela e insere apenas o que interessa pra esse teste
             using (var scope = _factory.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<ApiCaixaInvestDbContext>();
 
-                if (!db.TelemetriaRegistros.Any())
-                {
-                    db.TelemetriaRegistros.AddRange(
-                        new TelemetriaRegistro
-                        {
-                            Servico = "GET /api/simular-investimento",
-                            TempoRespostaMs = 120,
-                            Data = new DateTime(2025, 1, 10)
-                        },
-                        new TelemetriaRegistro
-                        {
-                            Servico = "GET /api/simular-investimento",
-                            TempoRespostaMs = 80,
-                            Data = new DateTime(2025, 1, 10)
-                        },
-                        new TelemetriaRegistro
-                        {
-                            Servico = "POST /api/auth/login",
-                            TempoRespostaMs = 50,
-                            Data = new DateTime(2025, 1, 15)
-                        }
-                    );
+                db.TelemetriaRegistros.RemoveRange(db.TelemetriaRegistros);
+                db.SaveChanges();
 
-                    db.SaveChanges();
-                }
+                db.TelemetriaRegistros.AddRange(
+                    new TelemetriaRegistro
+                    {
+                        Servico = "GET /api/simular-investimento",
+                        TempoRespostaMs = 120,
+                        Data = new DateTime(2025, 1, 10)
+                    },
+                    new TelemetriaRegistro
+                    {
+                        Servico = "GET /api/simular-investimento",
+                        TempoRespostaMs = 80,
+                        Data = new DateTime(2025, 1, 10)
+                    },
+                    new TelemetriaRegistro
+                    {
+                        Servico = "POST /api/auth/login",
+                        TempoRespostaMs = 50,
+                        Data = new DateTime(2025, 1, 15)
+                    }
+                );
+
+                db.SaveChanges();
             }
 
             var client = await CreateAuthenticatedClientAsync();
 
             var inicio = new DateOnly(2025, 1, 1);
             var fim = new DateOnly(2025, 1, 31);
-
             var url = $"/api/telemetria?inicio={inicio:yyyy-MM-dd}&fim={fim:yyyy-MM-dd}";
 
+            // Act
             var response = await client.GetAsync(url);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -95,9 +95,9 @@ namespace ApiCaixaInvest.Tests.Integration
             Assert.NotNull(resumo!.Servicos);
             Assert.True(resumo.Servicos.Any());
 
-            // Deve conter pelo menos o serviço de simulação
             Assert.Contains(resumo.Servicos, s =>
                 s.Nome.Contains("simular-investimento", StringComparison.OrdinalIgnoreCase));
         }
+
     }
 }

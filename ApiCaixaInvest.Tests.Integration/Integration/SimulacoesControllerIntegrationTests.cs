@@ -76,33 +76,25 @@ namespace ApiCaixaInvest.Tests.Integration
             if (response.StatusCode == HttpStatusCode.BadRequest)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-
-                try
-                {
-                    var errorObj = await response.Content.ReadFromJsonAsync<object>();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error parsing BadRequest: {ex.Message}");
-                }
-            }
-
-            if (response.StatusCode != HttpStatusCode.OK)
-            {
-                Assert.True(false, $"Expected OK but got {response.StatusCode}. Check console for details.");
+                // útil pra debugar se der ruim de novo
+                Console.WriteLine("BAD REQUEST CONTENT:");
+                Console.WriteLine(errorContent);
             }
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-            var body = await response.Content.ReadFromJsonAsync<SimularInvestimentoResponse>();
+            // Usamos o DTO público, o mesmo do controller/Swagger
+            var body = await response.Content.ReadFromJsonAsync<SimularInvestimentoPublicResponse>();
             Assert.NotNull(body);
-            Assert.True(body!.SimulacaoId > 0);
-            Assert.NotNull(body.ProdutoValidado);
+            Assert.NotNull(body!.ProdutoValidado);
             Assert.NotNull(body.ResultadoSimulacao);
 
+            // validações coerentes com a resposta pública
             Assert.Equal("CDB", body.ProdutoValidado!.Tipo);
             Assert.Equal(request.PrazoMeses, body.ResultadoSimulacao!.PrazoMeses);
+            Assert.True(body.ResultadoSimulacao!.ValorFinal > 0);
         }
+
 
 
         [Fact]

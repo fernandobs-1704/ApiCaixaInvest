@@ -13,13 +13,17 @@ namespace ApiCaixaInvest.Infrastructure.Services;
 public class AuthService : IAuthService
 {
     private readonly JwtOptions _jwtOptions;
+    private readonly ITokenStore _tokenStore;
 
-    public AuthService(IOptions<JwtOptions> jwtOptions)
+    public AuthService(
+        IOptions<JwtOptions> jwtOptions,
+        ITokenStore tokenStore)
     {
         _jwtOptions = jwtOptions.Value;
+        _tokenStore = tokenStore;
     }
 
-    public Task<LoginResponse?> AutenticarAsync(LoginRequest request)
+    public async Task<LoginResponse?> AutenticarAsync(LoginRequest request)
     {
         string perfil;
         if (request.Email.Equals("caixaverso@caixa.gov.br", StringComparison.OrdinalIgnoreCase) &&
@@ -29,18 +33,39 @@ public class AuthService : IAuthService
         }
         else
         {
-            // login inválido
-            return Task.FromResult<LoginResponse?>(null);
+            return null;
         }
 
+        return await GerarTokensAsync(request.Email, perfil);
+    }
+
+    public async Task<LoginResponse?> RenovarTokenAsync(RefreshTokenRequest request)
+    {
+        // valida refresh token no Redis
+        var valido = await _tokenStore.IsRefreshTokenValidAsync(request.Email, request.RefreshToken);
+        if (!valido)
+            return null;
+
+        // revoga o antigo (token rotation)
+        await _tokenStore.RevokeRefreshTokenAsync(request.Email, request.RefreshToken);
+
+        // aqui no futuro você pode validar usuário num banco; por enquanto,
+        // se chegou aqui, assume o mesmo perfil da autenticação inicial
+        var perfil = "Usuario";
+
+        return await GerarTokensAsync(request.Email, perfil);
+    }
+
+    private async Task<LoginResponse> GerarTokensAsync(string email, string perfil)
+    {
         var agora = DateTime.UtcNow;
         var expira = agora.AddMinutes(_jwtOptions.ExpirationMinutes);
 
         var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, request.Email),
-            new Claim(JwtRegisteredClaimNames.Email, request.Email),
-            new Claim(ClaimTypes.Name, request.Email),
+            new Claim(JwtRegisteredClaimNames.Sub, email),
+            new Claim(JwtRegisteredClaimNames.Email, email),
+            new Claim(ClaimTypes.Name, email),
             new Claim(ClaimTypes.Role, perfil),
             new Claim("perfil", perfil)
         };
@@ -58,14 +83,22 @@ public class AuthService : IAuthService
 
         var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
 
+        // refresh token: 7 dias
+        var refreshToken = Guid.NewGuid().ToString("N");
+        var refreshExpira = agora.AddDays(7);
+
+        await _tokenStore.StoreRefreshTokenAsync(email, refreshToken, refreshExpira);
+
         var response = new LoginResponse
         {
             Token = tokenString,
             ExpiraEm = expira,
-            Email = request.Email,
-            Perfil = perfil
+            Email = email,
+            Perfil = perfil,
+            RefreshToken = refreshToken,
+            RefreshTokenExpiraEm = refreshExpira
         };
 
-        return Task.FromResult<LoginResponse?>(response);
+        return response;
     }
 }

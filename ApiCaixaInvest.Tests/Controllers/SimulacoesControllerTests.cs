@@ -1,11 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using ApiCaixaInvest.Api.Controllers;
+﻿using ApiCaixaInvest.Api.Controllers;
 using ApiCaixaInvest.Application.Dtos.Requests.Simulacoes;
 using ApiCaixaInvest.Application.Dtos.Responses.Simulacoes;
 using ApiCaixaInvest.Application.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace ApiCaixaInvest.Tests.Controllers
@@ -63,11 +64,27 @@ namespace ApiCaixaInvest.Tests.Controllers
         [Fact]
         public async Task SimularInvestimento_DeveRetornarOk_QuandoSucesso()
         {
+            // Arrange
             var fake = new FakeSimulacoesService
             {
                 RespostaSimular = new SimularInvestimentoResponse
                 {
-                    SimulacaoId = 1
+                    SimulacaoId = 1,
+                    ProdutoValidado = new ProdutoResponse
+                    {
+                        Id = 10,
+                        Nome = "CDB Premium",
+                        Tipo = "CDB",
+                        Rentabilidade = 0.12m,
+                        Risco = "Baixo"
+                    },
+                    ResultadoSimulacao = new ResultadoSimulacaoResponse
+                    {
+                        ValorFinal = 1120.50m,
+                        PrazoMeses = 12,
+                        RentabilidadeEfetiva = 0.12m
+                    },
+                    DataSimulacao = DateTime.UtcNow
                 }
             };
 
@@ -81,12 +98,23 @@ namespace ApiCaixaInvest.Tests.Controllers
                 TipoProduto = "CDB"
             };
 
+            // Act
             var result = await controller.SimularInvestimento(request);
 
+            // Assert
             var ok = Assert.IsType<OkObjectResult>(result.Result);
-            var value = Assert.IsType<SimularInvestimentoResponse>(ok.Value);
-            Assert.Equal(1, value.SimulacaoId);
+
+            // Esperamos o DTO público, não o interno
+            var value = Assert.IsType<SimularInvestimentoPublicResponse>(ok.Value);
+
+            Assert.NotNull(value.ProdutoValidado);
+            Assert.NotNull(value.ResultadoSimulacao);
+
+            // Garante que o mapeamento veio do serviço corretamente
+            Assert.Equal(fake.RespostaSimular.ProdutoValidado.Nome, value.ProdutoValidado.Nome);
+            Assert.Equal(fake.RespostaSimular.ResultadoSimulacao.ValorFinal, value.ResultadoSimulacao.ValorFinal);
         }
+
 
         [Fact]
         public async Task SimularInvestimento_DeveRetornarBadRequest_QuandoArgumentException()

@@ -44,6 +44,26 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("refresh-token")]
+    [AllowAnonymous]
+    [SwaggerOperation(
+        Summary = "Renova o token de acesso usando um refresh token válido.",
+        Description = "Envia o e-mail do usuário e o refresh token obtido no login."
+    )]
+    [SwaggerResponse(StatusCodes.Status200OK, "Token renovado com sucesso.", typeof(LoginResponse))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest, "Requisição inválida.")]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Refresh token inválido ou expirado.")]
+    public async Task<ActionResult<LoginResponse>> RefreshToken([FromBody] RefreshTokenRequest request)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var result = await _authService.RenovarTokenAsync(request);
+        if (result == null)
+            return Unauthorized(new { message = "Refresh token inválido ou expirado." });
+
+        return Ok(result);
+    }
 
     [HttpGet("me")]
     [Authorize]

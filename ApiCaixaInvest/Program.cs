@@ -12,6 +12,7 @@ using Swashbuckle.AspNetCore.Filters;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -143,6 +144,16 @@ builder.Services.AddDbContext<ApiCaixaInvestDbContext>((services, options) =>
 builder.Services.Configure<JwtOptions>(
     builder.Configuration.GetSection("Jwt"));
 
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var configuration = builder.Configuration.GetConnectionString("Redis");
+
+    if (string.IsNullOrWhiteSpace(configuration))
+        throw new InvalidOperationException("ConnectionStrings:Redis não foi configurada.");
+
+    return ConnectionMultiplexer.Connect(configuration);
+});
+
 // Registro da camada de serviços (Interface -> Implementação)
 builder.Services.AddScoped<IRiskProfileService, PerfilRiscoService>();
 builder.Services.AddScoped<IInvestimentosService, InvestimentosService>();
@@ -151,6 +162,8 @@ builder.Services.AddScoped<ITelemetriaService, TelemetriaService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IClienteService, ClienteService>();
 builder.Services.AddScoped<ISimulacoesService, SimulacoesService>();
+
+builder.Services.AddScoped<ITokenStore, RedisTokenStore>();
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var secretKey = jwtSection.GetValue<string>("SecretKey");

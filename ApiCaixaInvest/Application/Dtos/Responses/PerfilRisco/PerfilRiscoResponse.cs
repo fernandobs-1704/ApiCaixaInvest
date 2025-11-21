@@ -25,12 +25,12 @@ public class PerfilRiscoResponse
     public PerfilRiscoTipoEnum PerfilTipo { get; set; }
 
     /// <summary>
-    /// Pontuação numérica usada para classificação (0–100).
+    /// Pontuação numérica usada para classificação (0–100+).
     /// </summary>
     public int Pontuacao { get; set; }
 
     /// <summary>
-    /// Descrição do perfil, conforme solicitado no enunciado.
+    /// Descrição detalhada do perfil, conforme solicitado no enunciado.
     /// </summary>
     public string Descricao { get; set; } = string.Empty;
 
@@ -38,4 +38,22 @@ public class PerfilRiscoResponse
     /// Data/hora da última atualização do perfil de risco.
     /// </summary>
     public DateTime UltimaAtualizacao { get; set; }
+
+    /// <summary>
+    /// Matriz de tendência dos próximos perfis,
+    /// calculada via modelo Markoviano estático.
+    /// Exemplo:
+    /// {
+    ///   "Conservador": 0.80,
+    ///   "Moderado": 0.18,
+    ///   "Agressivo": 0.02
+    /// }
+    /// </summary>
+    public Dictionary<string, double>? TendenciaPerfis { get; set; }
+
+    /// <summary>
+    /// Próximo perfil mais provável, considerando a matriz de transição.
+    /// Ex.: "Moderado" ou "Agressivo".
+    /// </summary>
+    public string? ProximoPerfilProvavel { get; set; }
 }

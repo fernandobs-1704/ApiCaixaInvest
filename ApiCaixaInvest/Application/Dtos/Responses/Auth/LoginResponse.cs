@@ -32,4 +32,14 @@ public class LoginResponse
     /// Perfil/regra de acesso (ex.: Cliente, Gestor).
     /// </summary>
     public string Perfil { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Redis RefreshToken.
+    /// </summary>
+    public string RefreshToken { get; set; } = default!;
+
+    /// <summary>
+    /// Redis RefreshToken Expiração.
+    /// </summary>
+    public DateTime RefreshTokenExpiraEm { get; set; }
 }
