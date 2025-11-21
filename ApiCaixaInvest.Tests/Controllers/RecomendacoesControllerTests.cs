@@ -48,10 +48,47 @@ namespace ApiCaixaInvest.Tests.Controllers
                     PerfilTipo = PerfilRiscoTipoEnum.Conservador,
                     Pontuacao = 10,
                     Descricao = "Cliente de baixo risco",
-                    UltimaAtualizacao = DateTime.UtcNow
+                    UltimaAtualizacao = DateTime.UtcNow,
+                    TendenciaPerfis = new Dictionary<string, double>
+            {
+                { "Conservador", 0.80 },
+                { "Moderado",    0.18 },
+                { "Agressivo",   0.02 }
+            },
+                    ProximoPerfilProvavel = "Conservador"
+                });
+            }
+
+            public Task<PerfilRiscoIaResponse> GerarExplicacaoIaAsync(int clienteId)
+            {
+                // Para os testes atuais de RecomendacoesController,
+                // provavelmente esse método nem é chamado.
+                // Mas precisa existir para satisfazer a interface.
+                return Task.FromResult(new PerfilRiscoIaResponse
+                {
+                    ClienteId = clienteId,
+                    Perfil = "Conservador",
+                    Pontuacao = 10,
+                    Resumo = "O seu perfil é conservador, priorizando segurança e baixa volatilidade.",
+                    VisaoComportamentoInvestidor =
+                        "Seu perfil foi calculado com base no seu histórico de investimentos, considerando volume aplicado, frequência de movimentações e exposição a risco.",
+                    SugestoesEstrategicas =
+                        "Como investidor de perfil conservador, você pode fortalecer sua segurança mantendo uma boa reserva de emergência e avaliando, com calma, a inclusão de ativos moderados.",
+                    AcoesRecomendadas =
+                        "Com a sua pontuação de 10 e o enquadramento no perfil Conservador, uma boa ação é manter foco em ativos de baixo risco e testar aos poucos exposições controladas a produtos um pouco mais arrojados.",
+                    AlertasImportantes =
+                        "Como investidor conservador, é importante ficar atento ao risco de a rentabilidade ficar abaixo da inflação quando há concentração excessiva em produtos de curtíssimo prazo.",
+                    TendenciaPerfis = new Dictionary<string, double>
+            {
+                { "Conservador", 0.80 },
+                { "Moderado",    0.18 },
+                { "Agressivo",   0.02 }
+            },
+                    ProximoPerfilProvavel = "Conservador"
                 });
             }
         }
+
 
         #endregion
 

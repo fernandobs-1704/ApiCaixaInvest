@@ -385,4 +385,138 @@ public class PerfilRiscoService : IRiskProfileService
     }
 
     #endregion
+
+    /// <summary>
+    /// Gera uma explicação didática em linguagem natural para o perfil de risco,
+    /// incluindo resumo, explicação do nível de risco, sugestões, ações e alertas.
+    /// </summary>
+    public async Task<PerfilRiscoIaResponse> GerarExplicacaoIaAsync(int clienteId)
+    {
+        if (clienteId <= 0)
+            throw new ArgumentOutOfRangeException(nameof(clienteId),
+                "O identificador do cliente deve ser maior que zero.");
+
+        // Garante que o perfil está calculado e persistido
+        var perfilBase = await CalcularPerfilAsync(clienteId);
+
+        var resumo = MontarResumo(perfilBase);
+        var visaoComportamento = MontarVisaoComportamentoInvestidor(perfilBase);
+        var sugestoes = MontarSugestoesEstrategicas(perfilBase);
+        var acoes = MontarAcoesRecomendadas(perfilBase);
+        var alertas = MontarAlertasImportantes(perfilBase);
+
+        return new PerfilRiscoIaResponse
+        {
+            ClienteId = perfilBase.ClienteId,
+            Perfil = perfilBase.Perfil,
+            Pontuacao = perfilBase.Pontuacao,
+            Resumo = resumo,
+            VisaoComportamentoInvestidor = visaoComportamento,
+            SugestoesEstrategicas = sugestoes,
+            AcoesRecomendadas = acoes,
+            AlertasImportantes = alertas,
+            TendenciaPerfis = perfilBase.TendenciaPerfis,
+            ProximoPerfilProvavel = perfilBase.ProximoPerfilProvavel
+        };
+    }
+
+
+    #region Helpers de narrativa IA (didáticos, em 3ª pessoa)
+
+    private static string MontarResumo(PerfilRiscoResponse perfil)
+    {
+        return perfil.PerfilTipo switch
+        {
+            PerfilRiscoTipoEnum.Conservador =>
+                "O seu perfil é conservador, priorizando segurança, estabilidade e menor oscilação, mesmo que isso reduza o potencial de ganho.",
+            PerfilRiscoTipoEnum.Moderado =>
+                "O seu perfil é moderado, buscando equilíbrio entre proteção do capital e oportunidade de ganhos superiores ao longo do tempo.",
+            PerfilRiscoTipoEnum.Agressivo =>
+                "O seu perfil é agressivo, aceitando maior volatilidade e risco no curto prazo em troca de potencial de retorno mais elevado no futuro.",
+            _ =>
+                "Seu perfil foi definido a partir do comportamento recente dos seus investimentos, combinando risco e retorno."
+        };
+    }
+
+
+    private static string MontarVisaoComportamentoInvestidor(PerfilRiscoResponse perfil)
+    {
+        return
+            "Seu perfil foi calculado a partir do seu histórico de investimentos, levando em conta o volume aplicado, a frequência das suas movimentações, a liquidez dos produtos que você utiliza e a sua exposição a ativos de maior risco. Essa análise reflete o seu comportamento real como investidor, e não apenas respostas teóricas de um questionário.";
+    }
+
+
+    private static string MontarSugestoesEstrategicas(PerfilRiscoResponse perfil)
+    {
+        return perfil.PerfilTipo switch
+        {
+            PerfilRiscoTipoEnum.Conservador =>
+                "Como investidor de perfil conservador, você pode fortalecer sua segurança mantendo uma reserva de emergência bem estruturada e, ao mesmo tempo, considerar incluir gradualmente uma pequena parcela em ativos moderados para reduzir o impacto da inflação.",
+
+            PerfilRiscoTipoEnum.Moderado =>
+                "Como investidor de perfil moderado, você pode obter bons resultados equilibrando sua carteira entre renda fixa e ativos de maior risco, enquanto revisa periodicamente sua alocação para evitar concentrações excessivas.",
+
+            PerfilRiscoTipoEnum.Agressivo =>
+                "Com seu perfil agressivo, você pode aproveitar oportunidades de maior retorno em estratégias de longo prazo e, ao mesmo tempo, proteger objetivos essenciais mantendo uma parte do patrimônio em produtos conservadores.",
+
+            _ =>
+                "Com seu perfil atual, uma estratégia eficiente é manter diversificação entre diferentes classes de ativos e ajustar o nível de risco conforme sua necessidade e objetivos evoluem."
+        };
+    }
+
+
+    private static string MontarAcoesRecomendadas(PerfilRiscoResponse perfil)
+    {
+        var tipo = perfil.PerfilTipo.ToString();
+        var score = perfil.Pontuacao;
+
+        return perfil.PerfilTipo switch
+        {
+            PerfilRiscoTipoEnum.Conservador =>
+                $"Com a sua pontuação de {score} e o enquadramento no perfil {tipo}, uma boa ação é definir limites mínimos em ativos conservadores e testar, com segurança, uma pequena exposição a produtos mais arrojados para fortalecer o potencial da sua carteira no longo prazo.",
+
+            PerfilRiscoTipoEnum.Moderado =>
+                $"A partir da sua pontuação de {score} e do perfil {tipo}, é recomendado estabelecer faixas-alvo de alocação entre renda fixa e renda variável, revisando sua carteira semestralmente para garantir que ela continue alinhada aos seus objetivos.",
+
+            PerfilRiscoTipoEnum.Agressivo =>
+                $"Com a sua pontuação de {score} e o perfil {tipo}, é importante definir limites máximos de exposição a ativos muito voláteis e adotar rebalanceamentos periódicos para evitar que eventos de mercado deixem sua carteira mais arriscada do que você gostaria.",
+
+            _ =>
+                $"Considerando sua pontuação de {score} e o perfil {tipo}, uma ação útil é mapear metas de alocação por prazo e acompanhar de tempos em tempos se a distribuição dos seus investimentos continua compatível com sua classificação."
+        };
+    }
+
+
+    private static string MontarAlertasImportantes(PerfilRiscoResponse perfil)
+    {
+        string alertaBase = perfil.PerfilTipo switch
+        {
+            PerfilRiscoTipoEnum.Conservador =>
+                "Como investidor conservador, é importante ficar atento ao risco de sua rentabilidade ficar abaixo da inflação quando há concentração excessiva em produtos de curtíssimo prazo.",
+
+            PerfilRiscoTipoEnum.Moderado =>
+                "Com seu perfil moderado, é essencial acompanhar a parcela mais exposta ao risco, já que oscilações maiores podem ocorrer se a carteira não for revisada periodicamente.",
+
+            PerfilRiscoTipoEnum.Agressivo =>
+                "Com seu perfil agressivo, o principal alerta está na possibilidade de perdas relevantes durante períodos de forte volatilidade, especialmente se você não mantiver uma reserva em ativos conservadores.",
+
+            _ =>
+                "Com seu perfil atual, é importante garantir que sua exposição ao risco esteja alinhada aos seus objetivos financeiros e tolerância a variações."
+        };
+
+        if (!string.IsNullOrWhiteSpace(perfil.ProximoPerfilProvavel))
+        {
+            alertaBase +=
+                $" Há também tendência de migração para o perfil {perfil.ProximoPerfilProvavel}, o que indica que seu comportamento atual pode estar alterando seu nível natural de tolerância ao risco.";
+        }
+
+        alertaBase +=
+            " Mudanças na sua vida financeira ou nos seus objetivos podem exigir uma reavaliação completa do seu perfil.";
+
+        return alertaBase;
+    }
+
+
+
+    #endregion
 }

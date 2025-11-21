@@ -368,5 +368,54 @@ namespace ApiCaixaInvest.Tests.Services
             Assert.True(resultado.Pontuacao > 0);
             Assert.False(string.IsNullOrWhiteSpace(resultado.Descricao));
         }
+
+        [Fact]
+        public async Task GerarExplicacaoIaAsync_deve_lancar_ArgumentOutOfRange_quando_clienteId_invalido()
+        {
+            // Arrange
+            using var db = CreateContext();
+            var service = new PerfilRiscoService(db);
+
+            // Act & Assert
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+                service.GerarExplicacaoIaAsync(0));
+        }
+
+        [Fact]
+        public async Task GerarExplicacaoIaAsync_deve_gerar_textos_e_tendencias_para_perfil_conservador_sem_historico()
+        {
+            // Arrange
+            using var db = CreateContext();
+            var service = new PerfilRiscoService(db);
+            int clienteId = 999; // cliente sem histórico => cai no fluxo conservador
+
+            // Act
+            var ia = await service.GerarExplicacaoIaAsync(clienteId);
+
+            // Assert básicos de identidade
+            Assert.NotNull(ia);
+            Assert.Equal(clienteId, ia.ClienteId);
+            Assert.Equal("Conservador", ia.Perfil);
+            Assert.Equal(20, ia.Pontuacao);
+
+            // Textos em linguagem natural não podem vir vazios
+            Assert.False(string.IsNullOrWhiteSpace(ia.Resumo));
+            Assert.False(string.IsNullOrWhiteSpace(ia.VisaoComportamentoInvestidor));
+            Assert.False(string.IsNullOrWhiteSpace(ia.SugestoesEstrategicas));
+            Assert.False(string.IsNullOrWhiteSpace(ia.AcoesRecomendadas));
+            Assert.False(string.IsNullOrWhiteSpace(ia.AlertasImportantes));
+
+            // Tendência Markoviana deve estar preenchida
+            Assert.NotNull(ia.TendenciaPerfis);
+            Assert.Equal(3, ia.TendenciaPerfis!.Count);
+            Assert.True(ia.TendenciaPerfis.ContainsKey("Conservador"));
+            Assert.True(ia.TendenciaPerfis.ContainsKey("Moderado"));
+            Assert.True(ia.TendenciaPerfis.ContainsKey("Agressivo"));
+
+            // Conservador deve ser o estado mais provável (0.80)
+            Assert.Equal(0.80, ia.TendenciaPerfis["Conservador"], 2);
+            Assert.Equal("Conservador", ia.ProximoPerfilProvavel);
+        }
+
     }
 }
