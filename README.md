@@ -1,13 +1,21 @@
-🚀 API Caixa Invest — Simulador de Investimentos com Perfil de Risco Dinâmico
+# 🚀 API Caixa Invest — Simulador de Investimentos com Perfil de Risco Dinâmico
 
-A API Caixa Invest, desenvolvida em .NET 9.0, implementa todo o ecossistema necessário para simulação de investimentos, recomendação inteligente de produtos e cálculo automático de perfil de risco, atendendo integralmente ao desafio proposto.
+![.NET 9](https://img.shields.io/badge/.NET-9.0-blueviolet)
+![Docker](https://img.shields.io/badge/Docker-Ready-blue)
+![Redis](https://img.shields.io/badge/Redis-Enabled-red)
+![License](https://img.shields.io/badge/License-MIT-green)
+![Status](https://img.shields.io/badge/Status-Production%20Ready-success)
+![Tests](https://img.shields.io/badge/Tests-Unit%20%2B%20Integration-brightgreen)
 
-A aplicação foi construída com Clean Architecture, banco local SQLite, autenticação JWT, Redis como suporte a segurança/performance, e cobertura com testes unitários e de integração.
+A API Caixa Invest, desenvolvida em **.NET 9.0**, implementa todo o ecossistema necessário para simulação de investimentos, recomendação inteligente de produtos e cálculo automático de perfil de risco, atendendo integralmente ao desafio proposto.
+
+A aplicação foi construída com **Clean Architecture**, banco local **SQLite**, autenticação **JWT**, **Redis** para otimização e segurança, além de testes **unitários** e **de integração** abrangentes.
 
 ---
 
 # 🧩 1. Arquitetura da Aplicação
 
+```
 ApiCaixaInvest/
 ├── api/                             → Camada Web (Presentation Layer)
 │   ├── controllers/                 → Endpoints REST
@@ -28,7 +36,7 @@ ApiCaixaInvest/
 │
 ├── Infraesctrutura/                 → Implementações (adapters)
 │   ├── Data/                        → DbContext e EF Core
-│   └── Services/                    → Serviços concretos:
+│   └── Services/                    → Serviços:
 │                                      Simulação, PerfilRisco,
 │                                      Investimentos, Produtos,
 │                                      Telemetria, RedisTokenStore
@@ -36,32 +44,26 @@ ApiCaixaInvest/
 ├── Dockerfile
 ├── docker-compose.yml
 └── README.md
-
+```
 
 ---
-🧠 2. Redis — Resumo de Uso na API
+
+# 🧠 2. Redis — Resumo de Uso na API
 
 O Redis está presente na solução de forma leve e estratégica:
 
-🔹 Finalidade
+### 🔹 Finalidade
+- Armazenamento de refresh tokens com expiração controlada  
+- Aumentar segurança evitando reuso de tokens antigos  
+- Reduzir leitura do SQLite em operações repetitivas  
+- Acelerar respostas de endpoints sensíveis  
 
-Armazenar refresh tokens com expiração controlada
+### 🔹 Onde é utilizado
+- **AuthController** → grava e valida refresh tokens  
+- **PerfilRiscoService** → cache leve do último cálculo  
+- **ProdutosService** → cache de produtos por risco  
 
-Aumentar segurança, evitando reuso de tokens antigos
-
-Minimizar acessos ao SQLite em operações repetitivas
-
-Suporte a mecanismos de autenticação mais eficientes
-
-🔹 Onde é utilizado
-
-AuthController → grava e valida refresh tokens
-
-PerfilRiscoService → pode armazenar último cálculo (cache leve)
-
-ProdutosService → usa cache em consultas de produtos por risco
-
-O Redis sobe automaticamente pelo docker-compose sem configuração adicional.
+O Redis sobe automaticamente pelo **docker-compose**.
 
 ---
 
@@ -75,7 +77,7 @@ O motor calcula automaticamente o perfil com base em:
 - Rentabilidade média  
 - Exposição a ativos de alto risco  
 
-Classificação:
+### Classificação:
 
 | Pontuação Total | Perfil |
 |-----------------|--------|
@@ -83,136 +85,92 @@ Classificação:
 | 81–140          | Moderado |
 | ≥ 141           | Agressivo |
 
-Além do cálculo básico, a API oferece:
+A API entrega também:
 
 ### ✔️ Perfil Detalhado  
 Inclui tendência Markoviana e próximo perfil provável.
 
 ### ✔️ Perfil com IA  
-Gera explicações em linguagem natural, com resumo, ações recomendadas e alertas personalizados.
+Explicação personalizada em linguagem natural.
 
 ---
 
-# 📡 4. Endpoints da API (Tabela Completa)
+# 📡 4. Endpoints da API
 
-### 🔐 **Autenticação**
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| POST | `/api/auth/login` | Login + token JWT + refresh token |
-| POST | `/api/auth/refresh-token` | Renova token |
-| GET | `/api/auth/me` | Teste de autenticação |
-
-### 👤 **Clientes**
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| GET | `/api/clientes` | Lista clientes existentes |
-| GET | `/api/clientes/{id}` | Consulta cliente específico |
-
-### 💼 **Investimentos**
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| GET | `/api/investimentos/{clienteId}` | Histórico do cliente |
-| POST | `/api/investimentos/efetivar` | Efetiva simulações e recalcula perfil |
-
-### 📊 **Perfil de Risco**
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| GET | `/api/perfil-risco/{clienteId}` | Perfil básico |
-| GET | `/api/perfil-risco/detalhado/{clienteId}` | Perfil detalhado (Liquidez, Tendência, etc.) |
-| GET | `/api/perfil-risco-ia/{clienteId}` | Explicação em linguagem natural |
-
-### 🏦 **Produtos**
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| GET | `/api/produtos` | Lista todos os produtos |
-| GET | `/api/produtos/{id}` | Consulta por ID |
-| GET | `/api/produtos/risco/{risco}` | Filtra por risco |
-
-### 🧠 **Recomendações**
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| GET | `/api/recomendacoes/produtos/{perfil}` | Recomenda por perfil informado |
-| GET | `/api/recomendacoes/cliente/{clienteId}` | Recomenda com base no perfil real do cliente |
-
-### 🧮 **Simulações**
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| POST | `/api/simular-investimento` | Simula investimento |
-| POST | `/api/simular-e-contratar-investimento` | Simula e efetiva em uma única operação |
-| GET | `/api/simulacoes` | Histórico completo |
-| GET | `/api/simulacoes/por-produto-dia` | Análise agrupada por produto e dia |
-
-### 📈 **Telemetria**
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| GET | `/api/telemetria?inicio=AAAA-MM-DD&fim=AAAA-MM-DD` | Volume + tempo médio por serviço |
+| Categoria | Método | Endpoint | Descrição |
+|----------|--------|----------|-----------|
+| **Auth** | POST | `/api/auth/login` | Login (JWT + RefreshToken) |
+| **Auth** | POST | `/api/auth/refresh-token` | Renova token |
+| **Auth** | GET | `/api/auth/me` | Teste de autenticação |
+| **Clientes** | GET | `/api/clientes` | Lista clientes |
+| **Clientes** | GET | `/api/clientes/{id}` | Cliente por ID |
+| **Investimentos** | GET | `/api/investimentos/{clienteId}` | Histórico |
+| **Investimentos** | POST | `/api/investimentos/efetivar` | Efetiva simulações |
+| **Perfil** | GET | `/api/perfil-risco/{clienteId}` | Perfil básico |
+| **Perfil** | GET | `/api/perfil-risco/detalhado/{clienteId}` | Perfil detalhado |
+| **Perfil** | GET | `/api/perfil-risco-ia/{clienteId}` | Perfil IA |
+| **Produtos** | GET | `/api/produtos` | Lista produtos |
+| **Produtos** | GET | `/api/produtos/{id}` | Produto por ID |
+| **Produtos** | GET | `/api/produtos/risco/{risco}` | Produtos por risco |
+| **Recomendações** | GET | `/api/recomendacoes/produtos/{perfil}` | Recomendação por perfil |
+| **Recomendações** | GET | `/api/recomendacoes/cliente/{clienteId}` | Recomendação automática |
+| **Simulações** | POST | `/api/simular-investimento` | Simula investimento |
+| **Simulações** | POST | `/api/simular-e-contratar-investimento` | Simula e efetiva |
+| **Simulações** | GET | `/api/simulacoes` | Histórico |
+| **Simulações** | GET | `/api/simulacoes/por-produto-dia` | Agrupado por dia |
+| **Telemetria** | GET | `/api/telemetria` | Métricas da API |
 
 ---
 
 # 🧪 5. Testes Automatizados
 
-A API possui **cobertura completa de testes**, incluindo:
-
-## ✔️ Testes Unitários  
-- Motor de Perfil de Risco  
+### ✔️ Unit Tests
+- Perfil de risco  
 - Simulações  
-- Efetivação  
 - Recomendações  
 - Produtos  
-- Telemetria  
 - Autenticação (mock Redis)
 
-## ✔️ Testes de Integração  
-Executados contra o servidor real em memória:
-
-- Autenticação real (Login)  
-- Simular + Efetivar + Consultar perfil  
-- Ciclo completo de investimentos  
-- Recomendações baseadas no comportamento real  
-
-Os testes garantem **confiabilidade**, **regressão zero** e **aderência ao enunciado**.
+### ✔️ Integration Tests
+- Login real  
+- Simular + efetivar  
+- Recomendações completas  
+- Telemetria real  
+- Contexto EF com SQLite em memória  
 
 ---
 
 # 🐳 6. Executando com Docker
 
-### Requisitos
-- Docker  
-- Docker Compose  
-
 ### Comando único:
 
 ```bash
 docker compose up --build
+```
 
+### Serviços iniciados:
 
-Serviços iniciados:
+| Serviço | Porta | Função |
+|--------|--------|--------|
+| API | http://localhost:8080 | Endpoints REST |
+| Redis | 6379 | Cache / Tokens / Otimizações |
 
-Serviço	Porta	Função
-API	http://localhost:8080	Endpoints REST
-Redis	6379	Armazenamento de tokens
+Swagger:
+👉 **http://localhost:8080/swagger**
 
-Swagger disponível em:
+---
 
-👉 http://localhost:8080/swagger
-
-🏁 Conclusão
+# 🏁 Conclusão
 
 A API Caixa Invest entrega:
 
-✔ Arquitetura limpa
-✔ Cálculo inteligente de perfil
-✔ IA explicativa
-✔ Redis para segurança
-✔ Testes completos
-✔ Docker pronto
-✔ Documentação Swagger
-✔ Total aderência ao desafio
+✔ Arquitetura limpa  
+✔ Cálculo inteligente de perfil  
+✔ IA explicativa  
+✔ Redis para segurança e performance  
+✔ Testes completos  
+✔ Docker pronto para uso  
+✔ Documentação limpa e objetiva  
 
-Pronto para produção, avaliação ou extensão.
+Pronta para produção, análise técnica ou apresentação.
 
-Se quiser, posso gerar também:
-🔥 versão curta,
-🔥 versão para apresentação,
-🔥 versão corporativa,
-🔥 versão com badges e shields para GitHub.
