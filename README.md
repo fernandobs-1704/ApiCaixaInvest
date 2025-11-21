@@ -12,7 +12,7 @@ Seu objetivo é fornecer uma infraestrutura completa para:
 - Registro de telemetria  
 - Histórico de investimentos e simulações  
 
-A plataforma atende integralmente todos os requisitos do enunciado oficial, entregando uma solução robusta, segura e pronta para uso profissional.
+A plataforma atende integralmente todos os requisitos do enunciado do desafio.
 
 ---
 
@@ -22,14 +22,32 @@ A API segue uma arquitetura organizada em camadas:
 
 ```
 ApiCaixaInvest/
- ├── Api/                     → Controllers e configuração da API
- ├── Application/             → DTOs, interfaces e lógica de aplicação
- ├── Domain/                  → Entidades, enums e regras do domínio
- ├── Infrastructure/          → Serviços, EF Core, DbContext, telemetria
- ├── Migrations/              → Migrations geradas pelo EF Core
- ├── Dockerfile
- ├── docker-compose.yml
- └── README.md
+ ├── api/                              → Camada de apresentação (Web API)
+ │    ├── controllers/                 → Controllers HTTP (endpoints REST)
+ │    ├── extensions/                  → Métodos de extensão (DI, Swagger, Auth, etc.)
+ │    ├── middleware/                  → Middlewares customizados (telemetria, erros, etc.)
+ │    └── swaggerexamples/             → Exemplos de request/response para Swagger (Swashbuckle)
+ │
+ ├── application/                      → Camada de aplicação (orquestra regras de negócio)
+ │    ├── Dtos/                        → DTOs de entrada/saída da API
+ │    ├── Interfaces/                  → Contratos dos serviços (Ports)
+ │    └── Options/                     → Bindings de configurações (ex.: JWT, Redis, etc.)
+ │
+ ├── DataBase/                         → Banco de dados SQLite (arquivo .db e scripts auxiliares)
+ │
+ ├── Domain/                           → Núcleo de domínio (regras puras)
+ │    ├── Enuns/                       → Enums de domínio (Perfil de risco, tipos, etc.)
+ │    └── Models/                      → Entidades de domínio (Cliente, Produto, Simulação, Investimento...)
+ │
+ ├── Infraesctrutura/                  → Implementações concretas (Adapters)
+ │    ├── Data/                        → DbContext, mapeamentos EF Core, repositórios
+ │    └── Services/                    → Serviços concretos (Simulação, PerfilRisco, Investimentos,
+ │                                      Produtos, Telemetria, RedisTokenStore, etc.)
+ │
+ ├── Dockerfile                        → Build da imagem da API (.NET 9 + SQLite)
+ ├── docker-compose.yml                → Orquestração da API + Redis
+ └── README.md                         → Documentação do projeto e instruções de execução
+
 ```
 
 ---
@@ -308,6 +326,4 @@ Segue um checklist de testes para validar todas funcionalidades:
 
 ---
 
-# 10. Licença
-Projeto acadêmico para demonstração técnica.
 
