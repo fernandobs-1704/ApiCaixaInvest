@@ -1,53 +1,67 @@
-# 🚀 API Caixa Invest — Simulador de Investimentos com Perfil de Risco Dinâmico
+🚀 API Caixa Invest — Simulador de Investimentos com Perfil de Risco Dinâmico
 
-A **API Caixa Invest**, desenvolvida em **.NET 9.0**, implementa todo o ecossistema necessário para simulação de investimentos, recomendação inteligente de produtos e cálculo automático de perfil de risco, atendendo integralmente ao desafio proposto.
+A API Caixa Invest, desenvolvida em .NET 9.0, implementa todo o ecossistema necessário para simulação de investimentos, recomendação inteligente de produtos e cálculo automático de perfil de risco, atendendo integralmente ao desafio proposto.
 
-A aplicação foi construída com **arquitetura limpa (Clean Architecture)**, banco local **SQLite**, autenticação **JWT**, suporte a **Redis** e cobertura completa com **testes unitários e testes de integração**.
+A aplicação foi construída com Clean Architecture, banco local SQLite, autenticação JWT, Redis como suporte a segurança/performance, e cobertura com testes unitários e de integração.
 
 ---
 
 # 🧩 1. Arquitetura da Aplicação
 
 ApiCaixaInvest/
-├── api/ → Camada Web API
-│ ├── controllers/ → Endpoints REST
-│ ├── extensions/ → Injeção de dependências, Swagger, Auth
-│ ├── middleware/ → Telemetria, erros, tratamento global
-│ └── swaggerexamples/ → Exemplos automáticos para Swagger
+├── api/                             → Camada Web (Presentation Layer)
+│   ├── controllers/                 → Endpoints REST
+│   ├── extensions/                  → DI, Swagger, Auth, Redis
+│   ├── middleware/                  → Telemetria, erros
+│   └── swaggerexamples/             → Exemplos para Swagger
 │
-├── application/ → Regras de aplicação
-│ ├── Dtos/ → Data Transfer Objects
-│ ├── Interfaces/ → Contratos (ports)
-│ └── Options/ → Configurações (JWT, Redis, etc.)
+├── application/                     → Camada de aplicação (use cases)
+│   ├── Dtos/                        → Objetos de transferência
+│   ├── Interfaces/                  → Contratos (ports)
+│   └── Options/                     → Configurações (JWT, Redis)
 │
-├── DataBase/ → Banco SQLite (.db)
+├── DataBase/                        → Banco SQLite (.db)
 │
-├── Domain/ → Núcleo de negócios (entidades puras)
-│ ├── Enuns/
-│ └── Models/
+├── Domain/                          → Regras de domínio
+│   ├── Enuns/
+│   └── Models/
 │
-├── Infraesctrutura/ → Implementações concretas (adapters)
-│ ├── Data/ → DbContext, EF Core, contextos
-│ └── Services/ → Serviços: Simulação, Perfil, Telemetria,
-│ Investimentos, Produtos, RedisTokenStore
+├── Infraesctrutura/                 → Implementações (adapters)
+│   ├── Data/                        → DbContext e EF Core
+│   └── Services/                    → Serviços concretos:
+│                                      Simulação, PerfilRisco,
+│                                      Investimentos, Produtos,
+│                                      Telemetria, RedisTokenStore
 │
-├── Dockerfile → Build .NET 9
-├── docker-compose.yml → API + Redis
+├── Dockerfile
+├── docker-compose.yml
 └── README.md
 
 
 ---
+🧠 2. Redis — Resumo de Uso na API
 
-# 🧠 2. Redis — Visão Geral na Solução
+O Redis está presente na solução de forma leve e estratégica:
 
-A API utiliza **Redis** para:
+🔹 Finalidade
 
-- Armazenamento e validação de **Refresh Tokens**
-- Melhoria no desempenho da autenticação
-- Evitar reuso indevido de tokens antigos
-- Reduzir acesso ao banco SQLite em operações de segurança
+Armazenar refresh tokens com expiração controlada
 
-O Redis é iniciado automaticamente via **docker-compose**, sem necessidade de configuração manual.
+Aumentar segurança, evitando reuso de tokens antigos
+
+Minimizar acessos ao SQLite em operações repetitivas
+
+Suporte a mecanismos de autenticação mais eficientes
+
+🔹 Onde é utilizado
+
+AuthController → grava e valida refresh tokens
+
+PerfilRiscoService → pode armazenar último cálculo (cache leve)
+
+ProdutosService → usa cache em consultas de produtos por risco
+
+O Redis sobe automaticamente pelo docker-compose sem configuração adicional.
 
 ---
 
