@@ -8,7 +8,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ApiCaixaInvest.Tests.Integration.Integration;
+namespace ApiCaixaInvest.Tests.Integration;
 
 public class AuthControllerIntegrationTests
      : IClassFixture<CustomWebApplicationFactory>
