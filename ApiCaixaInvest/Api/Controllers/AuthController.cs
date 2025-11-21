@@ -48,7 +48,7 @@ public class AuthController : ControllerBase
     [HttpGet("me")]
     [Authorize]
     [SwaggerOperation(
-        Summary = "Retorna informações básicas do usuário autenticado.",
+        Summary = "Teste para validar autenticação.",
         Description = "Endpoint de teste para validar se o token JWT está funcionando corretamente."
     )]
     [SwaggerResponse(StatusCodes.Status200OK, "Usuário autenticado retornado com sucesso.")]

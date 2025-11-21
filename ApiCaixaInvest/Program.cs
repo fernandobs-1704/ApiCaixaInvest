@@ -15,7 +15,7 @@ using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Controllers da API (padr„o ASP.NET Core)
+// Controllers da API (padr√£o ASP.NET Core)
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
@@ -24,9 +24,9 @@ builder.Services.AddSwaggerGen(c =>
     // Documento principal
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "API de Investimentos ñ Perfil de Risco Din‚mico",
+        Title = "API de Investimentos ‚Äì Perfil de Risco Din√¢mico",
         Version = "v1",
-        Description = "API para simulaÁ„o de investimentos, c·lculo de perfil de risco din‚mico, recomendaÁ„o de produtos e telemetria.",
+        Description = "API para simula√ß√£o de investimentos, c√°lculo de perfil de risco din√¢mico, recomenda√ß√£o de produtos e telemetria.",
         Contact = new OpenApiContact
         {
             Name = "Desafio CaixaVerso",
@@ -48,7 +48,7 @@ builder.Services.AddSwaggerGen(c =>
         Description = "Formato de hora: HH:mm:ss"
     });
 
-    // Coment·rios XML (summary/remarks)
+    // Coment√°rios XML (summary/remarks)
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     if (File.Exists(xmlPath))
@@ -56,7 +56,7 @@ builder.Services.AddSwaggerGen(c =>
         c.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
     }
 
-    // SeguranÁa JWT (bot„o Authorize)
+    // Seguran√ßa JWT (bot√£o Authorize)
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -90,7 +90,7 @@ builder.Services.AddSwaggerGen(c =>
         return new[] { controllerName ?? "API" };
     });
 
-    // Mostra o nome dos mÈtodos HTTP nos botıes (GET, POST, etc.)
+    // Mostra o nome dos m√©todos HTTP nos bot√µes (GET, POST, etc.)
     c.EnableAnnotations();
     c.ExampleFilters();
 });
@@ -112,7 +112,7 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
         var resposta = new
         {
             sucesso = false,
-            mensagem = "A requisiÁ„o contÈm dados inv·lidos. Verifique os campos enviados.",
+            mensagem = "A requisi√ß√£o cont√©m dados inv√°lidos. Verifique os campos enviados.",
             erros
         };
 
@@ -120,7 +120,7 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
     };
 });
 
-// ConfiguraÁ„o do Entity Framework Core com SQLite.
+// Configura√ß√£o do Entity Framework Core com SQLite.
 builder.Services.AddDbContext<ApiCaixaInvestDbContext>((services, options) =>
 {
     // Verifica se estamos em ambiente de teste
@@ -134,7 +134,7 @@ builder.Services.AddDbContext<ApiCaixaInvestDbContext>((services, options) =>
     }
     else
     {
-        // Para desenvolvimento/produÁ„o, usa SQLite
+        // Para desenvolvimento/produ√ß√£o, usa SQLite
         var cs = builder.Configuration.GetConnectionString("DefaultConnection");
         options.UseSqlite(cs);
     }
@@ -143,7 +143,7 @@ builder.Services.AddDbContext<ApiCaixaInvestDbContext>((services, options) =>
 builder.Services.Configure<JwtOptions>(
     builder.Configuration.GetSection("Jwt"));
 
-// Registro da camada de serviÁos (Interface -> ImplementaÁ„o)
+// Registro da camada de servi√ßos (Interface -> Implementa√ß√£o)
 builder.Services.AddScoped<IRiskProfileService, PerfilRiscoService>();
 builder.Services.AddScoped<IInvestimentosService, InvestimentosService>();
 builder.Services.AddScoped<IProdutosService, ProdutosService>();
@@ -173,7 +173,7 @@ builder.Services
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!)),
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.FromSeconds(30) // toler‚ncia de 30 segundos no momento que expirar
+            ClockSkew = TimeSpan.FromSeconds(30) // toler√¢ncia de 30 segundos no momento que expirar
         };
 
         options.Events = new JwtBearerEvents
@@ -193,22 +193,22 @@ builder.Services
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 context.Response.ContentType = "application/json";
 
-                // Determina se o erro foi token faltando ou token inv·lido
+                // Determina se o erro foi token faltando ou token inv√°lido
                 var erroPadrao = "TokenInvalido";
-                var detalhesPadrao = "O token informado est· corrompido, expirado ou n„o corresponde ‡ assinatura esperada.";
+                var detalhesPadrao = "O token informado est√° corrompido, expirado ou n√£o corresponde √† assinatura esperada.";
 
                 string mensagem;
 
-                // Quando N√O existe token algum
+                // Quando N√ÉO existe token algum
                 if (string.IsNullOrEmpty(context.Error) && string.IsNullOrEmpty(context.ErrorDescription))
                 {
-                    mensagem = "Credenciais n„o enviadas. Informe um token JWT v·lido no cabeÁalho Authorization.";
+                    mensagem = "Credenciais n√£o enviadas. Informe um token JWT v√°lido no cabe√ßalho Authorization.";
                     erroPadrao = "TokenNaoInformado";
-                    detalhesPadrao = "Nenhum token foi enviado na requisiÁ„o.";
+                    detalhesPadrao = "Nenhum token foi enviado na requisi√ß√£o.";
                 }
                 else
                 {
-                    mensagem = "Token inv·lido ou expirado.";
+                    mensagem = "Token inv√°lido ou expirado.";
                     erroPadrao = "TokenInvalido";
                 }
 
@@ -243,14 +243,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(options =>
     {
         options.SwaggerEndpoint("/swagger/v1/swagger.json", "API de Investimentos v1");
-        options.DocumentTitle = "Painel de Investimentos ñ Desafio CaixaVerso";
+        options.DocumentTitle = "Painel de Investimentos ‚Äì Desafio CaixaVerso";
         options.RoutePrefix = "swagger"; // acesso em /swagger
 
-        // UI mais amig·vel
+        // UI mais amig√°vel
         options.DisplayRequestDuration(); // mostra tempo de resposta
-        options.DefaultModelsExpandDepth(0); // esconde o painel de modelos por padr„o
         options.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.List); // endpoints em lista
-        options.EnableFilter(); // caixa de busca no topo (filtrar por nome/tag)
     });
 }
 

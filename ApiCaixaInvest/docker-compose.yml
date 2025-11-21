@@ -1,14 +1,20 @@
-﻿version: "3.9"
-
-services:
+﻿services:
   apicaixainvest:
+    build: .
+    image: apicaixainvest:latest
     container_name: apicaixainvest
-    build:
-      context: .
-      dockerfile: Dockerfile
     ports:
       - "8080:8080"
     environment:
-      ASPNETCORE_ENVIRONMENT: "Production"
+      # Ambiente
+      ASPNETCORE_ENVIRONMENT: "Development"
       ASPNETCORE_URLS: "http://+:8080"
 
+      # Configuração JWT (EXATAMENTE como no appsettings.json)
+      Jwt__Issuer: "ApiCaixaInvest"
+      Jwt__Audience: "ApiCaixaInvestClients"
+      Jwt__SecretKey: "bXlTdXBlclNlY3JldEtleV9Jc0hlcmVfMTIzNDU2Nzg5IQ=="
+      Jwt__ExpirationMinutes: "60"
+
+      # ConnectionString (SQLite dentro do container)
+      ConnectionStrings__DefaultConnection: "Data Source=app.db"

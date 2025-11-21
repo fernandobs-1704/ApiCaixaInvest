@@ -1,17 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using ApiCaixaInvest.Api.Controllers;
+﻿using ApiCaixaInvest.Api.Controllers;
+using ApiCaixaInvest.Application.Dtos.Responses.PerfilRisco;
 using ApiCaixaInvest.Application.Dtos.Responses.Produtos;
 using ApiCaixaInvest.Application.Interfaces;
+using ApiCaixaInvest.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace ApiCaixaInvest.Tests.Controllers
 {
     public class RecomendacoesControllerTests
     {
-        #region Fake Service
+        #region Fake Services
 
         private class FakeProdutosService : IProdutosService
         {
@@ -35,6 +37,22 @@ namespace ApiCaixaInvest.Tests.Controllers
             }
         }
 
+        private class FakeRiskProfileService : IRiskProfileService
+        {
+            public Task<PerfilRiscoResponse> CalcularPerfilAsync(int clienteId)
+            {
+                return Task.FromResult(new PerfilRiscoResponse
+                {
+                    ClienteId = clienteId,
+                    Perfil = "Conservador",
+                    PerfilTipo = PerfilRiscoTipoEnum.Conservador,
+                    Pontuacao = 10,
+                    Descricao = "Cliente de baixo risco",
+                    UltimaAtualizacao = DateTime.UtcNow
+                });
+            }
+        }
+
         #endregion
 
         [Fact]
@@ -51,8 +69,10 @@ namespace ApiCaixaInvest.Tests.Controllers
                 }
             };
 
-            var fakeService = new FakeProdutosService(lista);
-            var controller = new RecomendacoesController(fakeService);
+            var fakeProdutos = new FakeProdutosService(lista);
+            var fakePerfil = new FakeRiskProfileService();
+
+            var controller = new RecomendacoesController(fakeProdutos, fakePerfil);
 
             var result = await controller.GetProdutosRecomendados("Conservador");
 
@@ -64,11 +84,14 @@ namespace ApiCaixaInvest.Tests.Controllers
         [Fact]
         public async Task GetProdutosRecomendados_DeveRetornarBadRequest_QuandoArgumentException()
         {
-            var fakeService = new FakeProdutosService(
+            var fakeProdutos = new FakeProdutosService(
                 new List<ProdutoRecomendadoResponse>(),
-                new ArgumentException("Perfil obrigatório."));
+                new ArgumentException("Perfil obrigatório.")
+            );
 
-            var controller = new RecomendacoesController(fakeService);
+            var fakePerfil = new FakeRiskProfileService();
+
+            var controller = new RecomendacoesController(fakeProdutos, fakePerfil);
 
             var result = await controller.GetProdutosRecomendados("");
 
@@ -79,11 +102,14 @@ namespace ApiCaixaInvest.Tests.Controllers
         [Fact]
         public async Task GetProdutosRecomendados_DeveRetornarBadRequest_QuandoInvalidOperationException()
         {
-            var fakeService = new FakeProdutosService(
+            var fakeProdutos = new FakeProdutosService(
                 new List<ProdutoRecomendadoResponse>(),
-                new InvalidOperationException("Perfil inválido."));
+                new InvalidOperationException("Perfil inválido.")
+            );
 
-            var controller = new RecomendacoesController(fakeService);
+            var fakePerfil = new FakeRiskProfileService();
+
+            var controller = new RecomendacoesController(fakeProdutos, fakePerfil);
 
             var result = await controller.GetProdutosRecomendados("XPTO");
 

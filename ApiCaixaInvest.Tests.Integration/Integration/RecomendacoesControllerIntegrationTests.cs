@@ -70,5 +70,28 @@ namespace ApiCaixaInvest.Tests.Integration
             var body = await response.Content.ReadAsStringAsync();
             Assert.Contains("Perfil inválido", body, StringComparison.OrdinalIgnoreCase);
         }
+
+        [Fact]
+        public async Task GetRecomendacoesPorCliente_DeveRetornar200ELista()
+        {
+            var client = await CreateAuthenticatedClientAsync();
+
+            // cria ao menos uma simulação só pra registrar o cliente
+            await client.PostAsJsonAsync("/api/simular-investimento", new
+            {
+                ClienteId = 999,
+                Valor = 1000,
+                PrazoMeses = 12,
+                TipoProduto = "CDB"
+            });
+
+            var result = await client.GetAsync("/api/recomendacoes/cliente/999");
+
+            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+
+            var json = await result.Content.ReadAsStringAsync();
+            Assert.Contains("recomendacoes", json);
+        }
+
     }
 }
